@@ -7,7 +7,7 @@ import { useModal } from "@/hooks/useModal";
 import { Search, Pencil, Trash2, Plus } from "lucide-react";
 import { createProduct } from "../../../services/product.service";
 import ProductForm, { ProductFormData } from "@/components/Products/ProductForm";
-import { API_BASE } from "../configs/api-configs";
+// import { API_BASE } from "/../configs/api-configs";
 
 /* ================= TYPES ================= */
 
@@ -36,41 +36,37 @@ export default function ProductManagement() {
   const totalPages = Math.ceil(total / pageSize);
 
   /* ================= FETCH DATA ================= */
+  const fetchProducts = async () => {
+    try {
+      const res = await getProducts({
+        keyword: search,
+        page,
+        pageSize,
+      });
+
+      const mapped: Product[] = res.data.map((p) => ({
+        id: p.sku,
+        name: p.productName,
+        category: p.categoryName ?? "-",
+        shape: p.shapesName ?? "-",
+        image: p.mainImageUrl ?? "/images/no-image.png",
+        price: p.price,
+        quantity: p.quantity,
+        status: p.productStatus === "Available" ? "Active" : "Inactive",
+        createdAt: p.createdAt?.split("T")[0] ?? "-",
+      }));
+
+      setProducts(mapped);
+      setTotal(res.total);
+    } catch (err) {
+      console.error("Load products failed", err);
+    }
+  };
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await getProducts({
-          keyword: search,
-          page,
-          pageSize,
-        });
-
-        // ✅ ARRAY NẰM Ở res.data
-        const mapped: Product[] = res.data.map((p) => ({
-          id: p.sku,
-          name: p.productName,
-          category: p.categoryName ?? "-",
-          shape: p.shapesName ?? "-",
-          image: p.mainImageUrl
-            ? `${API_BASE}${p.mainImageUrl}`
-            : "/images/no-image.png",
-
-          price: p.price,
-          quantity: p.quantity,
-          status: p.productStatus === "Available" ? "Active" : "Inactive",
-          createdAt: p.createdAt?.split("T")[0] ?? "-",
-        }));
-
-        setProducts(mapped);
-        setTotal(res.total); // ✅ cực quan trọng cho pagination
-      } catch (err) {
-        console.error("Load products failed", err);
-      }
-    };
-
     const t = setTimeout(fetchProducts, 400);
     return () => clearTimeout(t);
   }, [search, page]);
+
 
   const handleCreateProduct = async (data: ProductFormData) => {
     try {
@@ -96,9 +92,8 @@ export default function ProductManagement() {
       });
 
       await createProduct(formData);
-
-      // ✅ reset & reload
       setPage(1);
+      await fetchProducts();
       closeModal();
     } catch (err: any) {
       console.error("Create product failed", err);

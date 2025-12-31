@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_ENDPOINTS } from "../configs/api-configs";
+import { API_BASE, API_ENDPOINTS } from "../configs/api-configs";
 
 /* ================= TYPES ================= */
 
@@ -16,24 +16,6 @@ export interface ProductApi {
   createdAt: string;
 }
 
-/* ================= CREATE PRODUCT ================= */
-
-export const createProduct = async (form: FormData) => {
-  const res = await axios.post(
-    API_ENDPOINTS.PRODUCT_CREATE,
-    form,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-
-  return res.data;
-};
-
-/* ================= GET PRODUCTS ================= */
-
 export interface PagedResponse<T> {
   total: number;
   page: number;
@@ -46,6 +28,17 @@ export interface GetProductParams {
   page?: number;
   pageSize?: number;
 }
+
+/* ================= CREATE ================= */
+
+export const createProduct = async (form: FormData) => {
+  const res = await axios.post(API_ENDPOINTS.PRODUCT_CREATE, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+/* ================= GET LIST ================= */
 
 export const getProducts = async (
   params: GetProductParams
@@ -66,5 +59,16 @@ export const getProducts = async (
     throw new Error("Không thể lấy danh sách sản phẩm");
   }
 
-  return res.json();
+  const json = await res.json();
+
+  // ✅ BUILD IMAGE URL Ở SERVICE
+  return {
+    ...json,
+    data: json.data.map((p: ProductApi) => ({
+      ...p,
+      mainImageUrl: p.mainImageUrl
+        ? `${API_BASE}${p.mainImageUrl}`
+        : null,
+    })),
+  };
 };
