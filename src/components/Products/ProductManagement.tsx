@@ -5,6 +5,9 @@ import { getProducts, type ProductApi } from "../../../services/product.service"
 import { Modal } from "@/components/ui/modal";
 import { useModal } from "@/hooks/useModal";
 import { Search, Pencil, Trash2, Plus } from "lucide-react";
+import { createProduct } from "../../../services/product.service";
+import ProductForm, { ProductFormData } from "@/components/Products/ProductForm";
+import { API_BASE } from "../configs/api-configs";
 
 /* ================= TYPES ================= */
 
@@ -27,46 +30,81 @@ export default function ProductManagement() {
 
   const [search, setSearch] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / pageSize);
 
   /* ================= FETCH DATA ================= */
-
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data: ProductApi[] = await getProducts();
+        const res = await getProducts({
+          keyword: search,
+          page,
+          pageSize,
+        });
 
-        const mapped: Product[] = data.map((p: ProductApi) => ({
+        // ✅ ARRAY NẰM Ở res.data
+        const mapped: Product[] = res.data.map((p) => ({
           id: p.sku,
           name: p.productName,
           category: p.categoryName ?? "-",
           shape: p.shapesName ?? "-",
-          image: p.mainImageUrl ?? "/images/no-image.png",
+          image: p.mainImageUrl
+            ? `${API_BASE}${p.mainImageUrl}`
+            : "/images/no-image.png",
+
           price: p.price,
           quantity: p.quantity,
           status: p.productStatus === "Available" ? "Active" : "Inactive",
-          createdAt: p.createdAt
-            ? p.createdAt.split("T")[0]
-            : "-",
+          createdAt: p.createdAt?.split("T")[0] ?? "-",
         }));
 
         setProducts(mapped);
+        setTotal(res.total); // ✅ cực quan trọng cho pagination
       } catch (err) {
         console.error("Load products failed", err);
       }
     };
 
-    fetchProducts();
-  }, []);
+    const t = setTimeout(fetchProducts, 400);
+    return () => clearTimeout(t);
+  }, [search, page]);
 
-  /* ================= FILTER ================= */
+  const handleCreateProduct = async (data: ProductFormData) => {
+    try {
+      const formData = new FormData();
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.id.toLowerCase().includes(search.toLowerCase())
-  );
+      formData.append("ProductName", data.name);
+      formData.append("CategoryId", String(data.categoryId));
+      formData.append("ShapesId", String(data.shapeId));
+      formData.append("Price", String(data.price));
+      formData.append("Quantity", String(data.quantity));
+      formData.append("ProductStatus", data.status);
 
-  /* ================= UI ================= */
+      if (data.description) {
+        formData.append("Description", data.description);
+      }
+
+      if (data.mainImage) {
+        formData.append("MainImage", data.mainImage);
+      }
+
+      data.subImages.forEach((file) => {
+        formData.append("SubImages", file);
+      });
+
+      await createProduct(formData);
+
+      // ✅ reset & reload
+      setPage(1);
+      closeModal();
+    } catch (err: any) {
+      console.error("Create product failed", err);
+      alert(err.response?.data?.error || "Create product failed");
+    }
+  };
 
   return (
     <div className="rounded-2xl bg-white p-6 text-gray-800 shadow-theme-xl dark:bg-slate-900 dark:text-white">
@@ -86,9 +124,13 @@ export default function ProductManagement() {
             <input
               placeholder="Search by name or SKU..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1); // ⭐ QUAN TRỌNG
+              }}
               className="h-10 rounded-lg pl-9 pr-4 text-sm border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800"
             />
+
           </div>
 
           {/* ADD */}
@@ -120,7 +162,7 @@ export default function ProductManagement() {
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map((p) => (
+            {products.map((p) => (
               <tr
                 key={p.id}
                 className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40"
@@ -132,7 +174,7 @@ export default function ProductManagement() {
                 >
                   {p.name}
                 </td>
-                  <td>
+                <td>
                   <img
                     src={p.image}
                     alt={p.name}
@@ -148,8 +190,8 @@ export default function ProductManagement() {
                 <td>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${p.status === "Active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-600"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-gray-100 text-gray-600"
                       }`}
                   >
                     {p.status}
@@ -171,7 +213,7 @@ export default function ProductManagement() {
               </tr>
             ))}
 
-            {filteredProducts.length === 0 && (
+            {products.length === 0 && (
               <tr>
                 <td colSpan={10} className="py-8 text-center text-gray-500">
                   No products found
@@ -180,19 +222,68 @@ export default function ProductManagement() {
             )}
           </tbody>
         </table>
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="px-3 py-1 rounded border text-sm disabled:opacity-40"
+            >
+              Prev
+            </button>
+
+            {Array.from({ length: totalPages }).map((_, i) => {
+              const p = i + 1;
+              return (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-3 py-1 rounded text-sm border
+            ${page === p
+                      ? "bg-indigo-500 text-white"
+                      : "bg-white hover:bg-gray-100"
+                    }`}
+                >
+                  {p}
+                </button>
+              );
+            })}
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1 rounded border text-sm disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
       </div>
 
       {/* MODAL */}
       <Modal
         isOpen={isOpen}
         onClose={closeModal}
-        className="max-w-[600px] rounded-xl bg-white p-6 dark:bg-slate-900"
+        className="max-w-[720px] rounded-xl bg-white dark:bg-slate-900"
       >
-        <h3 className="mb-4 text-lg font-semibold">Add / Edit Product</h3>
-        <p className="text-sm text-gray-500">
-          (Bạn có thể mở rộng form tại đây)
-        </p>
+        <div className="flex max-h-[85vh] flex-col">
+          {/* HEADER */}
+          <div className="border-b px-6 py-4">
+            <h3 className="text-lg font-semibold">Add Product</h3>
+          </div>
+
+          {/* BODY */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <ProductForm
+              onCancel={closeModal}
+              onSubmit={handleCreateProduct}
+            />
+
+          </div>
+        </div>
       </Modal>
+
     </div>
   );
 }
