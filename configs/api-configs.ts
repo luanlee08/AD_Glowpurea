@@ -11,8 +11,14 @@ export const API_ENDPOINTS = {
   // ===== CATEGORIES =====
   CATEGORIES: `${API_BASE}/api/categories`,      // GET
 
+  // ===== BLOG (ADMIN) =====
+  ADMIN_BLOGS: `${API_BASE}/api/admin/blogs`,
+  ADMIN_BLOG_CREATE: `${API_BASE}/api/admin/blogs`,
+  ADMIN_BLOG_UPDATE: (id: number) =>
+    `${API_BASE}/api/admin/blogs/${id}`,
+
   // ===== SHAPES =====
-  SHAPES: `${API_BASE}/api/shapes`,      
+  SHAPES: `${API_BASE}/api/shapes`,
 
   // AUTH: {
   //   LOGIN: `${API_BASE}/api/auth/login`,
