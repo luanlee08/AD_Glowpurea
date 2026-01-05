@@ -37,7 +37,11 @@ const navItems: NavItem[] = [
     name: "Account Management",
     path: "/accounts",
   },
-
+  {
+    icon: <PageIcon />, 
+    name: "Blog Management",
+    path: "/blogs",
+  },
   {
     icon: <CalenderIcon />,
     name: "Product Management",
