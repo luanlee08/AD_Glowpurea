@@ -32,11 +32,10 @@ export interface GetProductParams {
 /* ================= CREATE ================= */
 
 export const createProduct = async (form: FormData) => {
-  const res = await axios.post(API_ENDPOINTS.PRODUCT_CREATE, form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const res = await axios.post(API_ENDPOINTS.PRODUCT_CREATE, form);
   return res.data;
 };
+
 
 /* ================= GET LIST ================= */
 
@@ -72,3 +71,41 @@ export const getProducts = async (
     })),
   };
 };
+
+/* ================= GET DETAIL ================= */
+
+export const getProductById = async (productId: number) => {
+  const res = await fetch(`${API_ENDPOINTS.PRODUCTS}/${productId}`);
+
+  if (!res.ok) {
+    throw new Error("Không thể lấy chi tiết sản phẩm");
+  }
+
+  const json = await res.json();
+
+  // build full image url giống list
+  return {
+    ...json,
+    mainImageUrl: json.mainImageUrl
+      ? `${API_BASE}${json.mainImageUrl}`
+      : null,
+    subImageUrls: json.subImageUrls?.map(
+      (url: string) => `${API_BASE}${url}`
+    ),
+  };
+};
+
+/* ================= UPDATE ================= */
+
+export const updateProduct = async (
+  productId: number,
+  form: FormData
+) => {
+  const res = await axios.put(
+    `${API_ENDPOINTS.PRODUCTS}/${productId}`,
+    form
+  );
+
+  return res.data;
+};
+
