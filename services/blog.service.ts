@@ -10,7 +10,7 @@ export interface BlogAdminApi {
   authorEmail: string;
   isPublished: boolean;
   isFeatured: boolean;
-  isDeleted: boolean; 
+  isDeleted: boolean;
   createdAt: string;
 }
 
@@ -32,9 +32,13 @@ export const searchAdminBlogs = async (params: {
     { params }
   );
 
+  const raw = res.data;
+
   return {
-    ...res.data,
-    data: res.data.data.map((b: BlogAdminApi) => ({
+    total: raw.total ?? raw.Total,
+    page: raw.page ?? raw.Page,
+    pageSize: raw.pageSize ?? raw.PageSize,
+    data: (raw.data ?? raw.Data).map((b: BlogAdminApi) => ({
       ...b,
       blogThumbnail: b.blogThumbnail
         ? `${API_BASE}${b.blogThumbnail}`
@@ -42,6 +46,7 @@ export const searchAdminBlogs = async (params: {
     })),
   };
 };
+
 
 export const createBlog = async (formData: FormData) => {
   const res = await axios.post(

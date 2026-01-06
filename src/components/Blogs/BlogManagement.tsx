@@ -31,6 +31,11 @@ interface Blog {
 
 export default function BlogManagement() {
   const { isOpen, openModal, closeModal } = useModal();
+  const CATEGORY_MAP: Record<string, number> = {
+    "Tin tức": 1,
+    "Hướng dẫn": 2,
+    "Sự kiện": 3,
+  };
 
   /* ===== STATE ===== */
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -76,7 +81,7 @@ export default function BlogManagement() {
           content: b.blogContent,
           thumbnail: b.blogThumbnail ?? "/images/no-image.png",
           category: b.blogCategory,
-          categoryId: b.blogCategoryId ?? 1,
+          categoryId: b.categoryId, 
           author: b.authorEmail,
           status: b.isPublished ? "Đã xuất bản" : "Bản nháp",
           featured: b.isFeatured,
@@ -187,7 +192,9 @@ export default function BlogManagement() {
           openModal();
         }}
       />
+      <Modal isOpen={isOpen} onClose={() => { closeModal(); setEditingBlog(null); }} className="max-w-[720px] rounded-xl bg-white" > <div className="flex max-h-[85vh] flex-col"> <div className="border-b px-6 py-4"> <h3 className="text-lg font-semibold"> {editingBlog ? "Cập nhật Blog" : "Thêm Blog"} </h3> </div> <div className="flex-1 overflow-y-auto px-6 py-4"> <BlogForm key={editingBlog?.id ?? "create"} initialData={editingBlog ? { title: editingBlog.title, content: editingBlog.content, categoryId: editingBlog.categoryId, isPublished: editingBlog.status === "Đã xuất bản", isFeatured: editingBlog.featured, isDeleted: editingBlog.isDeleted, thumbnailUrl: editingBlog.thumbnail, } : undefined} submitText={editingBlog ? "Cập nhật" : "Tạo blog"} onCancel={() => { closeModal(); setEditingBlog(null); }} onSubmit={handleSubmitBlog} /> </div> </div> </Modal>
 
     </div>
+
   );
 }

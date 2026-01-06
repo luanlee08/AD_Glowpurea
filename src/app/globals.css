@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-
+@import "quill/dist/quill.snow.css";
 @custom-variant dark (&:is(.dark *));
 
 @theme {

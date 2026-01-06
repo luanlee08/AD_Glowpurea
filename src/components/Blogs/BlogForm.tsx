@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/editors/RichTextEditor";
 
 /* ================= TYPES ================= */
 
@@ -11,6 +12,7 @@ export interface BlogFormData {
   categoryId: number;
   isPublished: boolean;
   isFeatured: boolean;
+  isActive: boolean;
   thumbnail?: File | null;
 }
 
@@ -21,6 +23,7 @@ interface BlogFormProps {
     categoryId: number;
     isPublished: boolean;
     isFeatured: boolean;
+    isDeleted: boolean;
     thumbnailUrl?: string;
   };
   onSubmit: (data: BlogFormData) => Promise<void> | void;
@@ -44,12 +47,18 @@ export default function BlogForm({
     categoryId: initialData?.categoryId ?? 1,
     isPublished: initialData?.isPublished ?? false,
     isFeatured: initialData?.isFeatured ?? false,
+    isActive: initialData
+      ? !initialData.isDeleted
+      : true,
     thumbnail: null,
   }));
 
   const [preview, setPreview] = useState<string | null>(
     initialData?.thumbnailUrl ?? null
   );
+  useEffect(() => {
+    console.log("FORM INIT CATEGORY:", initialData?.categoryId);
+  }, [initialData]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -68,6 +77,21 @@ export default function BlogForm({
           : value,
     }));
   };
+  useEffect(() => {
+    if (!initialData) return;
+
+    setForm({
+      title: initialData.title,
+      content: initialData.content,
+      categoryId: initialData.categoryId, // ⭐ QUAN TRỌNG
+      isPublished: initialData.isPublished,
+      isFeatured: initialData.isFeatured,
+      isActive: !initialData.isDeleted,
+      thumbnail: null,
+    });
+
+    setPreview(initialData.thumbnailUrl ?? null);
+  }, [initialData]);
 
   const handleSelectChange = (
     e: React.ChangeEvent<HTMLSelectElement>
@@ -170,23 +194,26 @@ export default function BlogForm({
           className="w-full rounded-lg border px-3 py-2"
         >
           <option value={1}>Tin tức</option>
-          <option value={2}>Hướng dẫn</option>
-          <option value={3}>Sự kiện</option>
+          <option value={2}>Sự kiện</option>
+          <option value={3}>Sản phẩm</option>
         </select>
       </div>
 
       {/* CONTENT */}
       <div>
         <label className="mb-1 block font-medium">Nội dung</label>
-        <textarea
-          name="content"
+
+        <RichTextEditor
           value={form.content}
-          onChange={handleInputChange}
-          rows={8}
-          placeholder="Nhập nội dung blog..."
-          className="w-full rounded-lg border px-3 py-2 resize-none"
+          onChange={(html) =>
+            setForm((prev) => ({
+              ...prev,
+              content: html,
+            }))
+          }
         />
       </div>
+
 
       {/* THUMBNAIL */}
       <div>
@@ -223,8 +250,16 @@ export default function BlogForm({
           />
           Nổi bật
         </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="isActive"
+            checked={form.isActive}
+            onChange={handleInputChange}
+          />
+          Hoạt động
+        </label>
       </div>
-
       {/* ACTIONS */}
       <div className="flex justify-end gap-3 pt-4 border-t">
         <button
