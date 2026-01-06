@@ -172,7 +172,7 @@ export default function ProductForm({
     <div className="space-y-6">
       {/* NAME */}
       <div>
-        <label className="mb-1 block text-sm font-medium">Product Name</label>
+        <label className="mb-1 block text-sm font-medium">Tên sản phẩm</label>
         <input
           name="name"
           value={form.name}
@@ -183,21 +183,31 @@ export default function ProductForm({
 
       {/* PRICE & QUANTITY */}
       <div className="grid grid-cols-2 gap-4">
-        <input
-          type="number"
-          name="price"
-          value={form.price}
-          onChange={handleChange}
-          className="rounded-lg border px-3 py-2 text-sm"
-        />
-        <input
-          type="number"
-          name="quantity"
-          value={form.quantity}
-          onChange={handleChange}
-          className="rounded-lg border px-3 py-2 text-sm"
-        />
+        {/* CỘT GIÁ */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Giá</label>
+          <input
+            type="number"
+            name="price"
+            value={form.price}
+            onChange={handleChange}
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* CỘT SỐ LƯỢNG */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Số lượng</label>
+          <input
+            type="number"
+            name="quantity"
+            value={form.quantity}
+            onChange={handleChange}
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+          />
+        </div>
       </div>
+
 
       {/* CATEGORY & SHAPE */}
       <div className="grid grid-cols-2 gap-4">
@@ -207,7 +217,7 @@ export default function ProductForm({
           onChange={handleChange}
           className="rounded-lg border px-3 py-2 text-sm"
         >
-          <option value="">-- Select category --</option>
+          <option value="">-- Chọn phân loại --</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -221,7 +231,7 @@ export default function ProductForm({
           onChange={handleChange}
           className="rounded-lg border px-3 py-2 text-sm"
         >
-          <option value="">-- Select shape --</option>
+          <option value="">-- Chọn loại --</option>
           {shapes.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -237,9 +247,9 @@ export default function ProductForm({
         onChange={handleChange}
         className="rounded-lg border px-3 py-2 text-sm"
       >
-        <option value="Available">Available</option>
-        <option value="OutOfStock">Out of stock</option>
-        <option value="Discontinued">Discontinued</option>
+        <option value="Available">Còn hàng</option>
+        <option value="OutOfStock">Hết hàng</option>
+        <option value="Discontinued">Ngừng kinh doanh</option>
       </select>
 
       {/* DESCRIPTION */}
@@ -285,13 +295,13 @@ export default function ProductForm({
       {/* ACTIONS */}
       <div className="flex justify-end gap-3">
         <button onClick={onCancel} className="rounded border px-4 py-2 text-sm">
-          Cancel
+          Hủy
         </button>
         <button
           onClick={() => onSubmit(form)}
           className="rounded bg-indigo-500 px-5 py-2 text-sm text-white"
         >
-          Save Product
+          Lưu sản phẩm
         </button>
       </div>
     </div>

@@ -164,9 +164,14 @@ export default function ProductManagement() {
               <td className="px-3 py-2 text-center">
                 <img
                   src={p.image}
-                  className="h-10 w-10 mx-auto object-cover rounded cursor-pointer"
+                  alt={p.name}
                   onClick={() => setPreviewImage(p.image)}
+                  className="
+    h-10 w-10 mx-auto rounded object-cover cursor-pointer
+    hover:scale-110 transition-transform
+  "
                 />
+
               </td>
 
               <td className="px-3 py-2">{p.category}</td>
@@ -233,10 +238,10 @@ export default function ProductManagement() {
       {/* PAGINATION */}
       <div className="mt-6 flex items-center justify-between text-sm">
         <div className="text-gray-500">
-  Trang <span className="font-medium">{page}</span> /
-  <span className="font-medium"> {totalPages}</span> ·
-  Tổng <span className="font-medium"> {total}</span> sản phẩm
-</div>
+          Trang <span className="font-medium">{page}</span> /
+          <span className="font-medium"> {totalPages}</span> ·
+          Tổng <span className="font-medium"> {total}</span> sản phẩm
+        </div>
 
 
         <div className="flex items-center gap-2">
@@ -296,23 +301,49 @@ export default function ProductManagement() {
       </div>
 
       {/* MODAL */}
-      <Modal isOpen={isOpen} onClose={closeModal}>
-        <div
-          className="
-    w-full
-    max-w-[720px]
-    max-h-[85vh]
-    overflow-y-auto
-    rounded-2xl
-    bg-white
-    p-6
-    mx-auto
-  "
-        >
-          <ProductForm
-            onCancel={closeModal}
-            onSubmit={editingId ? handleUpdate : handleCreateProduct}
-            initialData={initialData}
+      <Modal
+        isOpen={isOpen}
+        onClose={closeModal}
+        className="max-w-[720px] rounded-xl bg-white dark:bg-slate-900"
+      >
+        <div className="flex max-h-[85vh] flex-col">
+          {/* HEADER */}
+          <div className="border-b px-6 py-4">
+            <h3 className="text-lg font-semibold">
+              {editingId ? "Cập nhật sản phẩm" : "Thêm sản phẩm"}
+            </h3>
+
+          </div>
+
+          {/* BODY */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <ProductForm
+              initialData={initialData}
+              onCancel={() => {
+                closeModal();
+                setEditingId(null);
+                setInitialData(null);
+              }}
+              onSubmit={editingId ? handleUpdate : handleCreateProduct}
+            />
+
+
+          </div>
+        </div>
+      </Modal>
+      {/* IMAGE PREVIEW MODAL */}
+      <Modal
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        className="max-w-[90vw] max-h-[90vh] bg-transparent shadow-none"
+      >
+        <div className="relative flex items-center justify-center">
+         
+          {/* Image */}
+          <img
+            src={previewImage ?? ""}
+            alt="Preview"
+            className="max-h-[85vh] max-w-[85vw] rounded-lg object-contain"
           />
         </div>
       </Modal>

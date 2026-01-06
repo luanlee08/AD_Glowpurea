@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useEffect } from "react";
 
+
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -9,6 +10,7 @@ interface ModalProps {
   showCloseButton?: boolean; // New prop to control close button visibility
   isFullscreen?: boolean; // Default to false for backwards compatibility
 }
+
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -20,6 +22,7 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
+
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -27,14 +30,17 @@ export const Modal: React.FC<ModalProps> = ({
       }
     };
 
+
     if (isOpen) {
       document.addEventListener("keydown", handleEscape);
     }
+
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -43,16 +49,19 @@ export const Modal: React.FC<ModalProps> = ({
       document.body.style.overflow = "unset";
     }
 
+
     return () => {
       document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
+
   if (!isOpen) return null;
+
 
   const contentClasses = isFullscreen
     ? "w-full h-full"
-    : "relative w-fit max-w-[90vw] rounded-3xl bg-white dark:bg-gray-900";
+    : "relative w-full rounded-3xl bg-white  dark:bg-gray-900";
 
 
   return (
@@ -94,3 +103,7 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
+
+
+
+

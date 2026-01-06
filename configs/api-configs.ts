@@ -3,10 +3,10 @@ export const API_BASE =
 
 export const API_ENDPOINTS = {
   // ===== PRODUCTS =====
-  PRODUCTS: `${API_BASE}/api/products`,          // GET (view/search/paging)
-  PRODUCT_CREATE: `${API_BASE}/api/products`,    // POST (add product)
+  PRODUCTS: `${API_BASE}/api/admin/products`,          // GET (view/search/paging)
+  PRODUCT_CREATE: `${API_BASE}/api/admin/products`,    // POST (add product)
   PRODUCT_UPDATE: (id: number) =>
-    `${API_BASE}/api/products/${id}`,
+    `${API_BASE}/api/admin/products/${id}`,
 
   // ===== CATEGORIES =====
   CATEGORIES: `${API_BASE}/api/categories`,      // GET
