@@ -1,8 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCategories, getShapes } from "../../../services/lookup.service";
+
+/* ================= TYPES ================= */
 
 export interface ProductFormData {
   name: string;
@@ -14,11 +17,16 @@ export interface ProductFormData {
   shapeId: number | "";
   mainImage: File | null;
   subImages: File[];
+
+  // dùng cho EDIT
+  mainImageUrl?: string | null;
+  subImageUrls?: string[];
 }
 
 interface Props {
   onSubmit: (data: ProductFormData) => void;
   onCancel: () => void;
+  initialData?: ProductFormData | null;
 }
 
 interface OptionItem {
@@ -26,7 +34,15 @@ interface OptionItem {
   name: string;
 }
 
-export default function ProductForm({ onSubmit, onCancel }: Props) {
+/* ================= COMPONENT ================= */
+
+export default function ProductForm({
+  onSubmit,
+  onCancel,
+  initialData,
+}: Props) {
+  /* ================= STATE ================= */
+
   const [form, setForm] = useState<ProductFormData>({
     name: "",
     quantity: 0,
@@ -45,7 +61,23 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
   const [mainPreview, setMainPreview] = useState<string | null>(null);
   const [subPreviews, setSubPreviews] = useState<string[]>([]);
 
+  /* ================= LOAD DATA EDIT ================= */
+
+  useEffect(() => {
+    if (!initialData) return;
+
+    setForm({
+      ...initialData,
+      mainImage: null,
+      subImages: [],
+    });
+
+    setMainPreview(initialData.mainImageUrl ?? null);
+    setSubPreviews(initialData.subImageUrls ?? []);
+  }, [initialData]);
+
   /* ================= LOAD CATEGORY & SHAPE ================= */
+
   useEffect(() => {
     const fetchLookups = async () => {
       try {
@@ -64,16 +96,26 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
   }, []);
 
   /* ================= CLEANUP PREVIEW ================= */
+
   useEffect(() => {
     return () => {
-      if (mainPreview) URL.revokeObjectURL(mainPreview);
-      subPreviews.forEach((url) => URL.revokeObjectURL(url));
+      if (mainPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(mainPreview);
+      }
+      subPreviews.forEach((url) => {
+        if (url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, [mainPreview, subPreviews]);
 
   /* ================= HANDLERS ================= */
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
 
@@ -81,7 +123,9 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
       ...p,
       [name]:
         name === "categoryId" || name === "shapeId"
-          ? value === "" ? "" : Number(value)
+          ? value === ""
+            ? ""
+            : Number(value)
           : value,
     }));
   };
@@ -97,9 +141,21 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
   const handleSubImages = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
-    const files = Array.from(e.target.files).slice(0, 6);
-    setForm((p) => ({ ...p, subImages: files }));
-    setSubPreviews(files.map((f) => URL.createObjectURL(f)));
+    const newFiles = Array.from(e.target.files);
+
+    const total =
+      (initialData?.subImageUrls?.length ?? 0) + newFiles.length;
+
+    if (total > 6) {
+      alert("Tổng ảnh phụ tối đa là 6");
+      return;
+    }
+
+    setForm((p) => ({ ...p, subImages: newFiles }));
+    setSubPreviews((p) => [
+      ...p,
+      ...newFiles.map((f) => URL.createObjectURL(f)),
+    ]);
   };
 
   const removeSubImage = (index: number) => {
@@ -111,11 +167,12 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
   };
 
   /* ================= UI ================= */
+
   return (
     <div className="space-y-6">
       {/* NAME */}
       <div>
-        <label className="mb-1 block text-sm font-medium">Product Name</label>
+        <label className="mb-1 block text-sm font-medium">Tên sản phẩm</label>
         <input
           name="name"
           value={form.name}
@@ -126,23 +183,31 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
 
       {/* PRICE & QUANTITY */}
       <div className="grid grid-cols-2 gap-4">
-        <input
-          type="number"
-          name="price"
-          placeholder="Price"
-          value={form.price}
-          onChange={handleChange}
-          className="rounded-lg border px-3 py-2 text-sm"
-        />
-        <input
-          type="number"
-          name="quantity"
-          placeholder="Quantity"
-          value={form.quantity}
-          onChange={handleChange}
-          className="rounded-lg border px-3 py-2 text-sm"
-        />
+        {/* CỘT GIÁ */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Giá</label>
+          <input
+            type="number"
+            name="price"
+            value={form.price}
+            onChange={handleChange}
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* CỘT SỐ LƯỢNG */}
+        <div>
+          <label className="mb-1 block text-sm font-medium">Số lượng</label>
+          <input
+            type="number"
+            name="quantity"
+            value={form.quantity}
+            onChange={handleChange}
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+          />
+        </div>
       </div>
+
 
       {/* CATEGORY & SHAPE */}
       <div className="grid grid-cols-2 gap-4">
@@ -150,9 +215,9 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
           name="categoryId"
           value={form.categoryId}
           onChange={handleChange}
-          className="rounded-lg border px-3 py-2 text-sm bg-white"
+          className="rounded-lg border px-3 py-2 text-sm"
         >
-          <option value="">-- Select category --</option>
+          <option value="">-- Chọn phân loại --</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -164,9 +229,9 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
           name="shapeId"
           value={form.shapeId}
           onChange={handleChange}
-          className="rounded-lg border px-3 py-2 text-sm bg-white"
+          className="rounded-lg border px-3 py-2 text-sm"
         >
-          <option value="">-- Select shape --</option>
+          <option value="">-- Chọn loại --</option>
           {shapes.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -180,11 +245,11 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
         name="status"
         value={form.status}
         onChange={handleChange}
-        className="rounded-lg border px-3 py-2 text-sm bg-white"
+        className="rounded-lg border px-3 py-2 text-sm"
       >
-        <option value="Available">Available</option>
-        <option value="OutOfStock">Out of stock</option>
-        <option value="Discontinued">Discontinued</option>
+        <option value="Available">Còn hàng</option>
+        <option value="OutOfStock">Hết hàng</option>
+        <option value="Discontinued">Ngừng kinh doanh</option>
       </select>
 
       {/* DESCRIPTION */}
@@ -199,7 +264,10 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
       {/* MAIN IMAGE */}
       <input type="file" accept="image/*" onChange={handleMainImage} />
       {mainPreview && (
-        <img src={mainPreview} className="h-32 w-32 rounded border object-cover" />
+        <img
+          src={mainPreview}
+          className="mt-2 h-32 w-32 rounded border object-cover"
+        />
       )}
 
       {/* SUB IMAGES */}
@@ -208,7 +276,10 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
         <div className="grid grid-cols-3 gap-3">
           {subPreviews.map((src, i) => (
             <div key={i} className="relative">
-              <img src={src} className="h-24 w-full rounded border object-cover" />
+              <img
+                src={src}
+                className="h-24 w-full rounded border object-cover"
+              />
               <button
                 type="button"
                 onClick={() => removeSubImage(i)}
@@ -224,13 +295,13 @@ export default function ProductForm({ onSubmit, onCancel }: Props) {
       {/* ACTIONS */}
       <div className="flex justify-end gap-3">
         <button onClick={onCancel} className="rounded border px-4 py-2 text-sm">
-          Cancel
+          Hủy
         </button>
         <button
           onClick={() => onSubmit(form)}
           className="rounded bg-indigo-500 px-5 py-2 text-sm text-white"
         >
-          Save Product
+          Lưu sản phẩm
         </button>
       </div>
     </div>
