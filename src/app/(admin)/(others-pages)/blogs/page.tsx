@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Blog Management | TailAdmin",
+  title: "Blog Management | Admin Glowpurea",
   description: "Manage blog posts, categories and publishing status",
 };
 

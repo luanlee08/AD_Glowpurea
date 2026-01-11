@@ -5,7 +5,10 @@ interface InputProps {
   id?: string;
   name?: string;
   placeholder?: string;
+
+  value?: string | number;       
   defaultValue?: string | number;
+
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
   min?: string;
@@ -14,7 +17,7 @@ interface InputProps {
   disabled?: boolean;
   success?: boolean;
   error?: boolean;
-  hint?: string; // Optional hint text
+  hint?: string;
 }
 
 const Input: FC<InputProps> = ({

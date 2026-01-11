@@ -20,9 +20,8 @@ export const API_ENDPOINTS = {
   // ===== SHAPES =====
   SHAPES: `${API_BASE}/api/shapes`,
 
-  // AUTH: {
-  //   LOGIN: `${API_BASE}/api/auth/login`,
-  //   REGISTER: `${API_BASE}/api/auth/register`,
-  //   VERIFY_OTP: `${API_BASE}/api/auth/verify-otp`,
-  // },
+    /* ===== BLOG CATEGORY ===== */
+  BLOG_CATEGORIES: `${API_BASE}/api/blog-categories`, 
+  // ===== AUTH (ADMIN) =====
+  ADMIN_LOGIN: `${API_BASE}/api/admin/auth/login`,
 };

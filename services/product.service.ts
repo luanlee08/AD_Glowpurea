@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosAdmin from "@/lib/axiosAdmin";
 import { API_BASE, API_ENDPOINTS } from "../configs/api-configs";
 
 /* ================= TYPES ================= */
@@ -32,7 +32,7 @@ export interface GetProductParams {
 /* ================= CREATE ================= */
 
 export const createProduct = async (form: FormData) => {
-  const res = await axios.post(API_ENDPOINTS.PRODUCT_CREATE, form);
+  const res = await axiosAdmin.post(API_ENDPOINTS.PRODUCT_CREATE, form);
   return res.data;
 };
 
@@ -42,25 +42,13 @@ export const createProduct = async (form: FormData) => {
 export const getProducts = async (
   params: GetProductParams
 ): Promise<PagedResponse<ProductApi>> => {
-  const query = new URLSearchParams();
 
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") {
-      query.append(k, String(v));
-    }
+  const res = await axiosAdmin.get(API_ENDPOINTS.PRODUCTS, {
+    params,
   });
 
-  const res = await fetch(
-    `${API_ENDPOINTS.PRODUCTS}?${query.toString()}`
-  );
+  const json = res.data;
 
-  if (!res.ok) {
-    throw new Error("Không thể lấy danh sách sản phẩm");
-  }
-
-  const json = await res.json();
-
-  // ✅ BUILD IMAGE URL Ở SERVICE
   return {
     ...json,
     data: json.data.map((p: ProductApi) => ({
@@ -71,6 +59,7 @@ export const getProducts = async (
     })),
   };
 };
+
 
 /* ================= GET DETAIL ================= */
 
@@ -101,7 +90,7 @@ export const updateProduct = async (
   productId: number,
   form: FormData
 ) => {
-  const res = await axios.put(
+  const res = await axiosAdmin.put(
     `${API_ENDPOINTS.PRODUCTS}/${productId}`,
     form
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import RichTextEditor from "@/components/editors/RichTextEditor";
-
+import { getBlogCategories, LookupItem } from "../../../services/lookup.service";
 /* ================= TYPES ================= */
 
 export interface BlogFormData {
@@ -168,6 +168,13 @@ export default function BlogForm({
       setIsSubmitting(false);
     }
   };
+  const [categories, setCategories] = useState<LookupItem[]>([]);
+
+  useEffect(() => {
+    getBlogCategories()
+      .then(setCategories)
+      .catch(() => toast.error("Không tải được thể loại"));
+  }, []);
 
   /* ================= RENDER ================= */
 
@@ -193,10 +200,17 @@ export default function BlogForm({
           onChange={handleSelectChange}
           className="w-full rounded-lg border px-3 py-2"
         >
-          <option value={1}>Tin tức</option>
-          <option value={2}>Sự kiện</option>
-          <option value={3}>Sản phẩm</option>
+          <option value={0} disabled>
+            -- Chọn thể loại -- 
+          </option>
+
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
+
       </div>
 
       {/* CONTENT */}

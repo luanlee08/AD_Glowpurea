@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosAdmin from "@/lib/axiosAdmin";
 import { API_ENDPOINTS } from "../configs/api-configs";
 
 export interface LookupItem {
@@ -7,7 +7,7 @@ export interface LookupItem {
 }
 
 export const getCategories = async (): Promise<LookupItem[]> => {
-  const res = await axios.get(API_ENDPOINTS.CATEGORIES);
+  const res = await axiosAdmin.get(API_ENDPOINTS.CATEGORIES);
 
   return res.data.map((c: any) => ({
     id: c.categoryId,
@@ -16,10 +16,18 @@ export const getCategories = async (): Promise<LookupItem[]> => {
 };
 
 export const getShapes = async (): Promise<LookupItem[]> => {
-  const res = await axios.get(API_ENDPOINTS.SHAPES);
+  const res = await axiosAdmin.get(API_ENDPOINTS.SHAPES);
 
   return res.data.map((s: any) => ({
     id: s.shapesId,
     name: s.shapesName,
+  }));
+};
+export const getBlogCategories = async (): Promise<LookupItem[]> => {
+  const res = await axiosAdmin.get(API_ENDPOINTS.BLOG_CATEGORIES);
+
+  return res.data.map((c: any) => ({
+    id: c.blogCategoryId,
+    name: c.blogCategoryName,
   }));
 };

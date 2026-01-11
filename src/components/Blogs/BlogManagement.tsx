@@ -50,11 +50,12 @@ export default function BlogManagement() {
 
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
 
+
   /* ================= DEBOUNCE SEARCH ================= */
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setSearch(keyword);
+      setSearch(keyword.trim());
       setPage(1);
     }, 400);
 
@@ -81,7 +82,7 @@ export default function BlogManagement() {
           content: b.blogContent,
           thumbnail: b.blogThumbnail ?? "/images/no-image.png",
           category: b.blogCategory,
-          categoryId: b.categoryId, 
+          categoryId: b.categoryId,
           author: b.authorEmail,
           status: b.isPublished ? "Đã xuất bản" : "Bản nháp",
           featured: b.isFeatured,
@@ -144,7 +145,8 @@ export default function BlogManagement() {
 
 
 
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
 
   /* ================= RENDER ================= */
 
@@ -193,7 +195,69 @@ export default function BlogManagement() {
         }}
       />
       <Modal isOpen={isOpen} onClose={() => { closeModal(); setEditingBlog(null); }} className="max-w-[720px] rounded-xl bg-white" > <div className="flex max-h-[85vh] flex-col"> <div className="border-b px-6 py-4"> <h3 className="text-lg font-semibold"> {editingBlog ? "Cập nhật Blog" : "Thêm Blog"} </h3> </div> <div className="flex-1 overflow-y-auto px-6 py-4"> <BlogForm key={editingBlog?.id ?? "create"} initialData={editingBlog ? { title: editingBlog.title, content: editingBlog.content, categoryId: editingBlog.categoryId, isPublished: editingBlog.status === "Đã xuất bản", isFeatured: editingBlog.featured, isDeleted: editingBlog.isDeleted, thumbnailUrl: editingBlog.thumbnail, } : undefined} submitText={editingBlog ? "Cập nhật" : "Tạo blog"} onCancel={() => { closeModal(); setEditingBlog(null); }} onSubmit={handleSubmitBlog} /> </div> </div> </Modal>
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between text-sm">
+          <div className="text-gray-500">
+            Trang <span className="font-medium">{page}</span> /
+            <span className="font-medium"> {totalPages}</span> ·
+            Tổng <span className="font-medium"> {total}</span> blog
+          </div>
 
+          <div className="flex items-center gap-2">
+            {/* PREV */}
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className={`rounded px-3 py-1 border
+          ${page === 1
+                  ? "cursor-not-allowed text-gray-400"
+                  : "hover:bg-gray-100"
+                }`}
+            >
+              ←
+            </button>
+
+            {/* PAGE NUMBERS */}
+            {Array.from({ length: totalPages })
+              .slice(
+                Math.max(0, page - 3),
+                Math.min(totalPages, page + 2)
+              )
+              .map((_, i) => {
+                const pageNumber = i + Math.max(1, page - 2);
+
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                    className={`rounded px-3 py-1 border
+                ${page === pageNumber
+                        ? "bg-indigo-500 text-white border-indigo-500"
+                        : "hover:bg-gray-100"
+                      }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+
+            {/* NEXT */}
+            <button
+              disabled={page === totalPages}
+              onClick={() =>
+                setPage((p) => Math.min(totalPages, p + 1))
+              }
+              className={`rounded px-3 py-1 border
+          ${page === totalPages
+                  ? "cursor-not-allowed text-gray-400"
+                  : "hover:bg-gray-100"
+                }`}
+            >
+              →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
 
   );

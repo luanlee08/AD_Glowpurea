@@ -6,10 +6,61 @@ import Button from "@/components/ui/button/Button";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Link from "next/link";
 import React, { useState } from "react";
-
+import { adminLogin } from "../../../services/auth.service";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 export default function SignInForm() {
+  const router = useRouter();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!identifier || !password) {
+      toast.error("Vui lòng nhập đầy đủ email và mật khẩu", {
+        id: "login-required",
+      });
+      return;
+    }
+
+
+    try {
+      setLoading(true);
+
+      const res = await adminLogin({
+        identifier: identifier.trim(),
+        password: password.trim(),
+      });
+
+      // 🔐 Lưu token
+      localStorage.setItem("admin_token", res.token);
+      localStorage.setItem("admin_email", res.email);
+      toast.success("Đăng nhập thành công 🎉", {
+        id: "login-success",
+      });
+      router.push("/dashboard");
+
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message ||
+        "Đăng nhập thất bại, vui lòng kiểm tra lại",
+        {
+          id: "login-failed",
+        }
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="w-full max-w-md sm:pt-10 mx-auto mb-5">
@@ -84,54 +135,72 @@ export default function SignInForm() {
                 </span>
               </div>
             </div>
-            <form>
+
+            <form onSubmit={handleSubmit}>
               <div className="space-y-6">
+                {/* IDENTIFIER */}
                 <div>
                   <Label>
-                    Email <span className="text-error-500">*</span>{" "}
+                    Email hoặc SĐT <span className="text-error-500">*</span>
                   </Label>
-                  <Input placeholder="info@gmail.com" type="email" />
+                  <Input
+                    type="text"
+                    placeholder="adminGlowpurea@gmail.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                  />
                 </div>
+
+                {/* PASSWORD */}
                 <div>
                   <Label>
-                    Password <span className="text-error-500">*</span>{" "}
+                    Password <span className="text-error-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                     >
                       {showPassword ? (
-                        <EyeIcon className="fill-gray-500 dark:fill-gray-400" />
+                        <EyeIcon className="fill-gray-500" />
                       ) : (
-                        <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400" />
+                        <EyeCloseIcon className="fill-gray-500" />
                       )}
                     </span>
                   </div>
                 </div>
+
+                {/* OPTIONS */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
+                    <span className="text-sm text-gray-600">
                       Keep me logged in
                     </span>
                   </div>
                   <Link
                     href="/reset-password"
-                    className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                    className="text-sm text-brand-500 hover:text-brand-600"
                   >
                     Forgot password?
                   </Link>
                 </div>
-                <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
-                  </Button>
-                </div>
+
+                {/* SUBMIT */}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="sm"
+                  disabled={loading}
+                >
+                  {loading ? "Signing in..." : "Sign in"}
+                </Button>
               </div>
             </form>
 

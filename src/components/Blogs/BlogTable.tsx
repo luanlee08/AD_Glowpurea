@@ -44,9 +44,11 @@ export default function BlogTable({
                             <tr key={b.id} className="border-b hover:bg-gray-50">
                                 <td>{b.id}</td>
                                 <td className="font-medium">{b.title}</td>
-                                <td className="max-w-[360px] truncate text-gray-600">
-                                    {b.content}
-                                </td>
+                                <td
+                                    className="max-w-[400px] truncate text-sm text-gray-600"
+                                    dangerouslySetInnerHTML={{ __html: b.content }}
+                                />
+
                                 <td>
                                     <img
                                         src={b.thumbnail}
@@ -60,8 +62,8 @@ export default function BlogTable({
                                 <td>
                                     <span
                                         className={`px-3 py-1 rounded-full text-xs ${b.status === "Đã xuất bản"
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-gray-100 text-gray-600"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-gray-100 text-gray-600"
                                             }`}
                                     >
                                         {b.status}
@@ -75,8 +77,8 @@ export default function BlogTable({
                                 <td>
                                     <span
                                         className={`px-3 py-1 rounded-full text-xs ${b.isDeleted
-                                                ? "bg-red-100 text-red-700"
-                                                : "bg-emerald-100 text-emerald-700"
+                                            ? "bg-red-100 text-red-700"
+                                            : "bg-emerald-100 text-emerald-700"
                                             }`}
                                     >
                                         {b.isDeleted ? "Đã xoá" : "Hoạt động"}
