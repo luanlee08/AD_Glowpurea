@@ -4,6 +4,7 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCategories, getShapes } from "../../../services/lookup.service";
+import toast from "react-hot-toast";
 
 /* ================= TYPES ================= */
 
@@ -60,6 +61,7 @@ export default function ProductForm({
 
   const [mainPreview, setMainPreview] = useState<string | null>(null);
   const [subPreviews, setSubPreviews] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* ================= LOAD DATA EDIT ================= */
 
@@ -143,19 +145,17 @@ export default function ProductForm({
 
     const newFiles = Array.from(e.target.files);
 
-    const total =
-      (initialData?.subImageUrls?.length ?? 0) + newFiles.length;
-
-    if (total > 6) {
-      alert("Tổng ảnh phụ tối đa là 6");
+    if (newFiles.length > 6) {
+      toast.error("Tối đa chỉ được chọn 6 ảnh phụ", {
+        id: "subimage-limit",
+      });
       return;
     }
 
+    // 🔥 REPLACE hoàn toàn
     setForm((p) => ({ ...p, subImages: newFiles }));
-    setSubPreviews((p) => [
-      ...p,
-      ...newFiles.map((f) => URL.createObjectURL(f)),
-    ]);
+    setSubPreviews(newFiles.map((f) => URL.createObjectURL(f)));
+
   };
 
   const removeSubImage = (index: number) => {
@@ -165,6 +165,56 @@ export default function ProductForm({
     }));
     setSubPreviews((p) => p.filter((_, i) => i !== index));
   };
+
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    if (!form.name.trim()) {
+      toast.error("Tên sản phẩm không được để trống", { id: "name-required" });
+      return;
+    }
+
+    if (form.price <= 0) {
+      toast.error("Giá sản phẩm phải lớn hơn 0", { id: "price-invalid" });
+      return;
+    }
+
+    if (form.quantity < 0) {
+      toast.error("Số lượng không hợp lệ", { id: "quantity-invalid" });
+      return;
+    }
+
+    if (!form.categoryId) {
+      toast.error("Vui lòng chọn phân loại", { id: "category-required" });
+      return;
+    }
+
+    if (!form.shapeId) {
+      toast.error("Vui lòng chọn loại sản phẩm", { id: "shape-required" });
+      return;
+    }
+
+    if (!initialData && !form.mainImage) {
+      toast.error("Vui lòng chọn ảnh chính", { id: "main-image-required" });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onSubmit(form);
+
+      toast.success(
+        initialData
+          ? "Cập nhật sản phẩm thành công"
+          : "Tạo sản phẩm thành công"
+      );
+    } catch {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   /* ================= UI ================= */
 
@@ -298,11 +348,17 @@ export default function ProductForm({
           Hủy
         </button>
         <button
-          onClick={() => onSubmit(form)}
-          className="rounded bg-indigo-500 px-5 py-2 text-sm text-white"
+          type="button"
+          disabled={isSubmitting}
+          onClick={handleSubmit}
+          className={`rounded px-5 py-2 text-sm text-white ${isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-indigo-500 hover:bg-indigo-600"
+            }`}
         >
-          Lưu sản phẩm
+          {isSubmitting ? "Đang xử lý..." : "Lưu sản phẩm"}
         </button>
+
       </div>
     </div>
   );

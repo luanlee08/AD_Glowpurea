@@ -27,6 +27,14 @@ interface Product {
   createdAt: string;
 }
 
+const truncateText = (text: string, maxLength = 25) => {
+  if (!text) return "";
+  return text.length > maxLength
+    ? text.slice(0, maxLength) + "..."
+    : text;
+};
+
+
 /* ================= COMPONENT ================= */
 
 export default function ProductManagement() {
@@ -122,16 +130,35 @@ export default function ProductManagement() {
   return (
     <div className="rounded-2xl bg-white p-6 shadow">
       {/* HEADER */}
+
+
       <div className="mb-6 flex justify-between">
         <h1 className="text-2xl font-bold">Quản lý sản phẩm</h1>
-        <button
-          onClick={openModal}
-          className="flex items-center gap-2 rounded bg-indigo-500 px-4 py-2 text-white"
-        >
-          <Plus size={16} />
-          Thêm sản phẩm
-        </button>
 
+        <div className="flex items-center gap-3">
+          {/* 🔍 Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1) // 🔥 reset page khi search
+              }}
+              placeholder="Tìm theo tên sản phẩm..."
+              className="h-10 rounded-lg border pl-9 pr-4 text-sm"
+            />
+          </div>
+
+          {/* ➕ Add Product */}
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600"
+          >
+            <Plus size={16} />
+            Thêm sản phẩm
+          </button>
+        </div>
       </div>
 
       {/* TABLE */}
@@ -159,7 +186,15 @@ export default function ProductManagement() {
             >
               <td className="px-3 py-2 font-medium">{p.sku}</td>
 
-              <td className="px-3 py-2">{p.name}</td>
+              <td className="px-3 py-2 max-w-[280px]">
+                <span
+                  title={p.name}
+                  className="block break-words"
+                >
+                  {truncateText(p.name, 25)}
+                </span>
+              </td>
+
 
               <td className="px-3 py-2 text-center">
                 <img
@@ -338,7 +373,7 @@ export default function ProductManagement() {
         className="max-w-[90vw] max-h-[90vh] bg-transparent shadow-none"
       >
         <div className="relative flex items-center justify-center">
-         
+
           {/* Image */}
           <img
             src={previewImage ?? ""}
