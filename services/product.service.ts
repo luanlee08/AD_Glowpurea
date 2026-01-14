@@ -64,15 +64,12 @@ export const getProducts = async (
 /* ================= GET DETAIL ================= */
 
 export const getProductById = async (productId: number) => {
-  const res = await fetch(`${API_ENDPOINTS.PRODUCTS}/${productId}`);
+  const res = await axiosAdmin.get(
+    `${API_ENDPOINTS.PRODUCTS}/${productId}`
+  );
 
-  if (!res.ok) {
-    throw new Error("Không thể lấy chi tiết sản phẩm");
-  }
+  const json = res.data;
 
-  const json = await res.json();
-
-  // build full image url giống list
   return {
     ...json,
     mainImageUrl: json.mainImageUrl
@@ -83,6 +80,7 @@ export const getProductById = async (productId: number) => {
     ),
   };
 };
+
 
 /* ================= UPDATE ================= */
 

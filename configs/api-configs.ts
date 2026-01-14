@@ -24,4 +24,10 @@ export const API_ENDPOINTS = {
   BLOG_CATEGORIES: `${API_BASE}/api/blog-categories`, 
   // ===== AUTH (ADMIN) =====
   ADMIN_LOGIN: `${API_BASE}/api/admin/auth/login`,
+
+  // ===== ACCOUNTS (ADMIN) =====
+ ACCOUNTS: `${API_BASE}/api/admin/accounts`,
+  ACCOUNT_UPDATE_STATUS: (id: number) =>
+    `${API_BASE}/api/admin/accounts/${id}/status`,
+
 };

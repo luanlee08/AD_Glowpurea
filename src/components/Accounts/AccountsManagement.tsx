@@ -1,191 +1,247 @@
 "use client";
+import { toast } from "react-hot-toast";
+import { useEffect, useState } from "react";
+import { Search, Pencil } from "lucide-react";
+import {
+  getAccounts,
+  updateAccountStatus,
+  type Account,
+  type AccountStatus,
+} from "../../../services/account.service";
 
-import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { useModal } from "@/hooks/useModal";
-import { Search, Pencil, Trash2, Plus } from "lucide-react";
-
-interface Account {
-  id: string;
-  avatar: string;
-  fullName: string;
-  email: string;
-  role: "Admin" | "Staff" | "Customer";
-  status: "Active" | "Inactive";
-  createdAt: string;
-}
 
 export default function AccountManagement() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [keyword, setKeyword] = useState("");
+  const [status, setStatus] = useState<AccountStatus | "">("");
+
+  const [editing, setEditing] = useState<Account | null>(null);
+  const [editStatus, setEditStatus] = useState<AccountStatus>("Active");
   const { isOpen, openModal, closeModal } = useModal();
-  const [search, setSearch] = useState("");
 
-  const [accounts, setAccounts] = useState<Account[]>([
-    {
-      id: "ACC001",
-      avatar: "/images/avatar-1.png",
-      fullName: "Nguyen Van A",
-      email: "a@gmail.com",
-      role: "Admin",
-      status: "Active",
-      createdAt: "2024-06-01",
-    },
-    {
-      id: "ACC002",
-      avatar: "/images/avatar-2.png",
-      fullName: "Tran Thi B",
-      email: "b@gmail.com",
-      role: "Customer",
-      status: "Inactive",
-      createdAt: "2024-06-05",
-    },
-  ]);
+  const openEdit = (acc: Account) => {
+    setEditing(acc);
+    setEditStatus(acc.status);
+    openModal();
+  };
+  const handleUpdateStatus = async () => {
+    if (!editing) return;
 
-  const filteredAccounts = accounts.filter(
-    (a) =>
-      a.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      a.email.toLowerCase().includes(search.toLowerCase()) ||
-      a.id.toLowerCase().includes(search.toLowerCase())
-  );
+    const toastId = toast.loading("Đang cập nhật trạng thái...");
 
+    try {
+      await updateAccountStatus(editing.accountId, editStatus);
+
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.accountId === editing.accountId
+            ? { ...a, status: editStatus }
+            : a
+        )
+      );
+
+      toast.success("Cập nhật trạng thái tài khoản thành công", {
+        id: toastId,
+      });
+
+      closeModal();
+      setEditing(null);
+    } catch (error) {
+      toast.error("Cập nhật trạng thái thất bại", {
+        id: toastId,
+      });
+    }
+  };
+
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await getAccounts({
+        keyword,
+        status: status || undefined,
+      });
+
+      setAccounts(res?.data ?? []);
+
+    };
+
+    load();
+  }, [keyword, status]);
+
+
+
+
+  const renderStatus = (status: AccountStatus) => {
+    const map = {
+      Active: "bg-green-100 text-green-700",
+      Blocked: "bg-red-100 text-red-700",
+      Inactive: "bg-gray-200 text-gray-600",
+    };
+
+    return (
+      <span
+        className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${map[status]}`}
+      >
+        {status}
+      </span>
+    );
+  };
   return (
-    <div className="rounded-2xl bg-white p-6 text-gray-800 shadow-theme-xl dark:bg-slate-900 dark:text-white">
+    <div className="rounded-2xl bg-white p-6 shadow-theme-xl">
       {/* HEADER */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Account Management</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage user accounts, roles and status
-          </p>
-        </div>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Account Management</h1>
 
         <div className="flex items-center gap-3">
-          {/* SEARCH */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
-              placeholder="Search by name, email or ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="
-                h-10 rounded-lg pl-9 pr-4 text-sm
-                border border-gray-300 bg-white
-                dark:border-gray-700 dark:bg-gray-800
-              "
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Search name, email, phone..."
+              className="h-10 w-64 rounded-lg border border-gray-200 pl-9 pr-4 text-sm focus:border-indigo-500 focus:outline-none"
             />
           </div>
 
-          {/* ADD */}
-          <button
-            onClick={openModal}
-            className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600"
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as any)}
+            className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
           >
-            <Plus size={16} />
-            Add Account
-          </button>
+            <option value="">All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Blocked">Blocked</option>
+          </select>
         </div>
       </div>
 
+
+
       {/* TABLE */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              <th className="py-3">ID</th>
-              <th>User</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th className="text-right pr-6">Actions</th>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-gray-500">
+            <th className="py-3">Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {accounts.map((a) => (
+            <tr
+              key={a.accountId}
+              className="border-b hover:bg-gray-50 transition"
+            >
+              <td className="py-4 font-medium">{a.accountName}</td>
+              <td>{a.email}</td>
+              <td>{a.phoneNumber ?? "-"}</td>
+              <td className="capitalize">{a.roleName ?? "customer"}</td>
+              <td>{renderStatus(a.status)}</td>
+              <td>
+                {new Date(a.createdAt).toLocaleDateString()}
+              </td>
+              <td className="px-3 py-2 text-center">
+                <button
+                  className="p-2 rounded hover:bg-gray-200"
+                  onClick={() => openEdit(a)}
+                >
+                  <Pencil size={16} />
+                </button>
+              </td>
             </tr>
-          </thead>
+          ))}
+        </tbody>
+      </table>
 
-          <tbody>
-            {filteredAccounts.map((a) => (
-              <tr
-                key={a.id}
-                className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40"
-              >
-                {/* ID */}
-                <td className="py-4 text-xs text-gray-500 dark:text-gray-400">
-                  {a.id}
-                </td>
-
-                {/* USER */}
-                <td>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={a.avatar}
-                      alt={a.fullName}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                    <span className="font-medium">{a.fullName}</span>
-                  </div>
-                </td>
-
-                {/* EMAIL */}
-                <td>{a.email}</td>
-
-                {/* ROLE */}
-                <td>
-                  <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400">
-                    {a.role}
-                  </span>
-                </td>
-
-                {/* STATUS */}
-                <td>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      a.status === "Active"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-400"
-                    }`}
-                  >
-                    {a.status}
-                  </span>
-                </td>
-
-                {/* CREATED */}
-                <td className="text-xs text-gray-500 dark:text-gray-400">
-                  {a.createdAt}
-                </td>
-
-                {/* ACTIONS */}
-                <td className="text-right pr-6">
-                  <div className="inline-flex items-center gap-3">
-                    <button className="rounded-md p-1 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-gray-700">
-                      <Pencil size={16} />
-                    </button>
-                    <button className="rounded-md p-1 text-red-500 hover:bg-red-100 dark:hover:bg-gray-700">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-
-            {filteredAccounts.length === 0 && (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-500">
-                  No accounts found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* MODAL */}
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
-        className="max-w-[600px] rounded-xl bg-white p-6 dark:bg-slate-900"
+        onClose={() => {
+          closeModal();
+          setEditing(null);
+        }}
+        className="max-w-[480px] rounded-xl bg-white"
       >
-        <h3 className="mb-4 text-lg font-semibold">Add / Edit Account</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          (Form thêm/sửa account có thể triển khai ở đây)
-        </p>
+        <div className="flex max-h-[85vh] flex-col">
+          {/* HEADER */}
+          <div className="border-b px-6 py-4">
+            <h3 className="text-lg font-semibold">
+              Cập nhật trạng thái tài khoản
+            </h3>
+          </div>
+
+          {/* BODY */}
+          <div className="flex-1 space-y-4 px-6 py-4">
+            {/* Name */}
+            <div>
+              <label className="mb-1 block text-sm text-gray-600">
+                Tên tài khoản
+              </label>
+              <input
+                value={editing?.accountName ?? ""}
+                disabled
+                className="w-full rounded-lg border bg-gray-100 px-3 py-2 text-sm"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="mb-1 block text-sm text-gray-600">
+                Email
+              </label>
+              <input
+                value={editing?.email ?? ""}
+                disabled
+                className="w-full rounded-lg border bg-gray-100 px-3 py-2 text-sm"
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="mb-1 block text-sm text-gray-600">
+                Trạng thái
+              </label>
+              <select
+                value={editStatus}
+                onChange={(e) =>
+                  setEditStatus(e.target.value as AccountStatus)
+                }
+                className="w-full rounded-lg border px-3 py-2 text-sm"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Blocked">Blocked</option>
+              </select>
+            </div>
+          </div>
+
+          {/* FOOTER */}
+          <div className="flex justify-end gap-3 border-t px-6 py-4">
+            <button
+              onClick={() => {
+                closeModal();
+                setEditing(null);
+              }}
+              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              Hủy
+            </button>
+
+            <button
+              onClick={handleUpdateStatus}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Lưu thay đổi
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
