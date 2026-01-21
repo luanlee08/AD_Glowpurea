@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosAdmin from "@/lib/axiosAdmin";
 import { API_BASE, API_ENDPOINTS } from "../configs/api-configs";
 
 export interface BlogAdminApi {
@@ -27,7 +27,7 @@ export const searchAdminBlogs = async (params: {
   page: number;
   pageSize: number;
 }): Promise<BlogPagedResponse> => {
-  const res = await axios.get(
+  const res = await axiosAdmin.get(
     `${API_BASE}/api/admin/blogs/search`,
     { params }
   );
@@ -49,7 +49,7 @@ export const searchAdminBlogs = async (params: {
 
 
 export const createBlog = async (formData: FormData) => {
-  const res = await axios.post(
+  const res = await axiosAdmin.post(
     API_ENDPOINTS.ADMIN_BLOG_CREATE,
     formData,
     {
@@ -66,7 +66,7 @@ export const updateBlog = async (
   blogId: number,
   formData: FormData
 ) => {
-  const res = await axios.put(
+  const res = await axiosAdmin.put(
     `${API_BASE}/api/admin/blogs/${blogId}`,
     formData,
     {

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
-
+import RichTextEditor from "@/components/editors/RichTextEditor";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCategories, getShapes } from "../../../services/lookup.service";
@@ -303,13 +303,21 @@ export default function ProductForm({
       </select>
 
       {/* DESCRIPTION */}
-      <textarea
-        rows={4}
-        name="description"
-        value={form.description}
-        onChange={handleChange}
-        className="w-full rounded-lg border px-3 py-2 text-sm"
-      />
+      <div>
+        <label className="mb-1 block text-sm font-medium">
+          Mô tả sản phẩm
+        </label>
+
+        <RichTextEditor
+          value={form.description}
+          onChange={(html) =>
+            setForm((prev) => ({
+              ...prev,
+              description: html,  
+            }))
+          }
+        />
+      </div>
 
       {/* MAIN IMAGE */}
       <input type="file" accept="image/*" onChange={handleMainImage} />
@@ -352,8 +360,8 @@ export default function ProductForm({
           disabled={isSubmitting}
           onClick={handleSubmit}
           className={`rounded px-5 py-2 text-sm text-white ${isSubmitting
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-500 hover:bg-indigo-600"
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-indigo-500 hover:bg-indigo-600"
             }`}
         >
           {isSubmitting ? "Đang xử lý..." : "Lưu sản phẩm"}
