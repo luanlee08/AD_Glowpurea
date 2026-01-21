@@ -10,14 +10,21 @@ const getAuthHeader = () => {
 
 /* ================= ADMIN ================= */
 
-export const getAdminOrders = async () => {
-  const res = await fetch(API_ENDPOINTS.ADMIN_ORDERS, {
-    headers: getAuthHeader(),
-  });
+export const getAdminOrders = async (
+  page: number,
+  pageSize: number
+) => {
+  const res = await fetch(
+    `${API_ENDPOINTS.ADMIN_ORDERS}?page=${page}&pageSize=${pageSize}`,
+    {
+      headers: getAuthHeader(),
+    }
+  );
 
   if (!res.ok) throw new Error("Get admin orders failed");
   return res.json();
-}
+};
+
 
 export const updateOrderStatus = async (
   orderId: number,
@@ -35,9 +42,15 @@ export const updateOrderStatus = async (
     }
   );
 
-  if (!res.ok) throw new Error("Update order status failed");
-  return res.json();
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Update order status failed");
+  }
+
+  // ✅ KHÔNG return res.json()
+  return;
 };
+
 
 export const getAdminOrderDetail = async (orderId: number) => {
   const res = await fetch(
