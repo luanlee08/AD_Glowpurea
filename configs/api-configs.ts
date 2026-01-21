@@ -30,4 +30,11 @@ export const API_ENDPOINTS = {
   ACCOUNT_UPDATE_STATUS: (id: number) =>
     `${API_BASE}/api/admin/accounts/${id}/status`,
 
+  // ===== ADMIN ORDERS =====
+  ADMIN_ORDERS: `${API_BASE}/api/admin/orders`,
+  ADMIN_ORDER_DETAIL: (id: number) =>
+    `${API_BASE}/api/admin/orders/${id}`,
+  ADMIN_UPDATE_ORDER_STATUS: (id: number) =>
+    `${API_BASE}/api/admin/orders/${id}/status`,
 };
+

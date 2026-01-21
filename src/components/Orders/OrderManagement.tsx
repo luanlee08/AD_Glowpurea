@@ -1,117 +1,380 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, Pencil, Eye } from "lucide-react";
+import { createPortal } from "react-dom";
+import { getAdminOrders, updateOrderStatus, getAdminOrderDetail } from "../../../services/order.service";
+import { Modal } from "@/components/ui/modal";
+import { useModal } from "@/hooks/useModal";
 
-interface Order {
-  id: string;
-  customer: string;
-  total: number;
-  status: "Pending" | "Processing" | "Completed" | "Cancelled";
+/* ================= TYPES ================= */
+
+interface AdminOrder {
+  orderId: number;
+  accountId: number;
+  accountName: string;
+  email: string;
+  totalAmount: number;
+  status: string;
   createdAt: string;
 }
 
+interface AdminOrderItem {
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+interface AdminOrderDetail {
+  orderId: number;
+  customerName: string;
+  email: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  items: AdminOrderItem[];
+}
+
+/* ================= PAGE ================= */
+
 export default function OrderManagement() {
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [editingOrder, setEditingOrder] = useState<AdminOrder | null>(null);
+  const [editStatusId, setEditStatusId] = useState<number>(0);
+  const [viewOrder, setViewOrder] = useState<AdminOrderDetail | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const {
+    isOpen: isViewOpen,
+    openModal: openViewModal,
+    closeModal: closeViewModal,
+  } = useModal();
+  const {
+    isOpen: isEditOpen,
+    openModal: openEditModal,
+    closeModal: closeEditModal,
+  } = useModal();
 
-  const orders: Order[] = [
-    {
-      id: "ORD001",
-      customer: "Nguyen Van A",
-      total: 59.99,
-      status: "Pending",
-      createdAt: "2024-06-10",
-    },
-    {
-      id: "ORD002",
-      customer: "Tran Thi B",
-      total: 120.5,
-      status: "Completed",
-      createdAt: "2024-06-11",
-    },
-  ];
+  const ModalPortal = ({ children }: { children: React.ReactNode }) => {
+    if (typeof window === "undefined") return null;
+    return createPortal(children, document.body);
+  };
+  /* ===== LOAD ORDERS ===== */
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const data = await getAdminOrders();
+        setOrders(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchOrders();
+  }, []);
+
+  /* ===== SEARCH ===== */
   const filteredOrders = orders.filter(
     (o) =>
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer.toLowerCase().includes(search.toLowerCase())
+      o.orderId.toString().includes(search) ||
+      o.accountName.toLowerCase().includes(search.toLowerCase()) ||
+      o.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  return (
-    <div className="rounded-2xl bg-white p-6 text-gray-800 shadow-theme-xl dark:bg-slate-900 dark:text-white">
-      {/* HEADER */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Order Management</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            View and manage customer orders
-          </p>
-        </div>
+  /* ===== UPDATE STATUS ===== */
+  const statusToId: Record<string, number> = {
+    Pending: 1,
+    Shipped: 2,
+    Delivered: 3,
+    Confirmed: 4,
+    Cancelled: 5,
+  };
 
-        {/* SEARCH ONLY */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            placeholder="Search order ID or customer..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="
-              h-10 rounded-lg pl-9 pr-4 text-sm
-              border border-gray-300 bg-white
-              dark:border-gray-700 dark:bg-gray-800
-            "
-          />
-        </div>
+  const statusIdToName: Record<number, string> = {
+    1: "Pending",
+    2: "Shipped",
+    3: "Delivered",
+    4: "Confirmed",
+    5: "Cancelled",
+  };
+
+
+
+  const handleChangeStatus = async (
+    orderId: number,
+    statusId: number
+  ) => {
+    try {
+      await updateOrderStatus(orderId, statusId);
+
+      const data = await getAdminOrders();
+      setOrders(data);
+    } catch (err) {
+      alert("Cập nhật trạng thái thất bại");
+      throw err;
+    }
+  };
+
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow">
+      <div className="mb-6 flex justify-between">
+        <h1 className="text-2xl font-bold">Order Management</h1>
+
+        <input
+          placeholder="Search order / customer / email"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-10 rounded-lg border px-4"
+        />
       </div>
 
-      {/* TABLE */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      {loading && <p>Loading...</p>}
+
+      {!loading && (
+        <table className="w-full text-sm border-separate border-spacing-y-2">
           <thead>
-            <tr className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              <th className="py-3 text-left">Order ID</th>
-              <th className="text-left">Customer</th>
-              <th className="text-left">Total</th>
-              <th className="text-left">Status</th>
-              <th className="text-left">Created</th>
-              <th className="text-right pr-6">Action</th>
+            <tr className="text-left text-gray-500">
+              <th className="px-4 py-2">Order</th>
+              <th className="px-4 py-2">Customer</th>
+              <th className="px-4 py-2">Email</th>
+              <th className="px-4 py-2">Total</th>
+              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2">Created</th>
+              <th className="px-4 py-2 text-center">Thao tác</th>
             </tr>
           </thead>
+
+
           <tbody>
             {filteredOrders.map((o) => (
               <tr
-                key={o.id}
-                className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40"
+                key={o.orderId}
+                className="bg-white rounded-lg shadow-sm"
               >
-                <td className="py-4">{o.id}</td>
-                <td>{o.customer}</td>
-                <td className="font-semibold">${o.total}</td>
-                <td>
-                  <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400">
+                <td className="px-4 py-3 font-medium">ORD{o.orderId}</td>
+                <td className="px-4 py-3">{o.accountName}</td>
+                <td className="px-4 py-3">{o.email}</td>
+                <td className="px-4 py-3">
+                  {o.totalAmount.toLocaleString("vi-VN")} đ
+                </td>
+
+                <td className="px-4 py-3">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold
+                    ${o.status === "Pending" && "bg-yellow-100 text-yellow-700"}
+                    ${o.status === "Shipped" && "bg-blue-100 text-blue-700"}
+                    ${o.status === "Delivered" && "bg-indigo-100 text-indigo-700"}
+                    ${o.status === "Confirmed" && "bg-green-100 text-green-700"}
+                    ${o.status === "Cancelled" && "bg-red-100 text-red-700"}
+                  `}
+                  >
                     {o.status}
                   </span>
+
                 </td>
-                <td className="text-xs text-gray-500 dark:text-gray-400">
-                  {o.createdAt}
+
+
+                <td>
+                  {new Date(o.createdAt).toLocaleDateString("vi-VN")}
                 </td>
-                <td className="text-right pr-6">
-                  <button className="rounded-md p-1 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-gray-700">
+                <td className="px-4 py-3 text-center flex justify-center gap-3">
+                  {/* VIEW DETAIL */}
+                  <button
+                    onClick={async () => {
+                      try {
+                        setViewLoading(true);
+                        const detail = await getAdminOrderDetail(o.orderId);
+                        setViewOrder(detail);
+                        openViewModal(); // 🔥 mở modal
+                      } catch {
+                        alert("Không tải được chi tiết đơn hàng");
+                      } finally {
+                        setViewLoading(false);
+                      }
+                    }}
+                  >
                     <Eye size={16} />
                   </button>
+
+
+                  {/* EDIT STATUS */}
+                  <button
+                    disabled={o.status === "Confirmed" || o.status === "Cancelled"}
+                    onClick={() => {
+                      setEditingOrder(o);
+                      setEditStatusId(statusToId[o.status]);
+                      openEditModal(); // 🔥 mở modal
+                    }}
+                    className={`text-gray-500 hover:text-black
+                      ${(o.status === "Confirmed" || o.status === "Cancelled")
+                      && "opacity-40 cursor-not-allowed hover:text-gray-500"}
+                    `}
+                  >
+                    <Pencil size={16} />
+                  </button>
+
                 </td>
+
+
               </tr>
             ))}
-
-            {filteredOrders.length === 0 && (
-              <tr>
-                <td colSpan={6} className="py-8 text-center text-gray-500">
-                  No orders found
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
-      </div>
+      )}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => {
+          closeEditModal();
+          setEditingOrder(null);
+        }}
+        className="max-w-[420px] rounded-xl bg-white"
+      >
+        {editingOrder && (
+          <div className="flex max-h-[80vh] flex-col">
+            {/* ===== HEADER ===== */}
+            <div className="border-b px-6 py-4">
+              <h3 className="text-lg font-semibold">
+                Edit Order #{editingOrder.orderId}
+              </h3>
+            </div>
+
+            {/* ===== BODY ===== */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Status</p>
+
+                <select
+                  value={editStatusId}
+                  onChange={(e) => setEditStatusId(Number(e.target.value))}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                >
+                  <option value={1}>Pending</option>
+                  <option value={2}>Shipped</option>
+                  <option value={3}>Delivered</option>
+                  <option value={4}>Confirmed</option>
+                  <option value={5}>Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            {/* ===== FOOTER ===== */}
+            <div className="border-t px-6 py-4 flex justify-end gap-2">
+              <button
+                className="rounded-lg border px-4 py-2 text-sm"
+                onClick={() => {
+                  closeEditModal();
+                  setEditingOrder(null);
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                disabled={editStatusId === statusToId[editingOrder.status]}
+                className={`rounded-lg px-4 py-2 text-sm text-white
+            ${editStatusId === statusToId[editingOrder.status]
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-black"}
+          `}
+                onClick={async () => {
+                  await handleChangeStatus(
+                    editingOrder.orderId,
+                    editStatusId
+                  );
+                  closeEditModal();
+                  setEditingOrder(null);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={isViewOpen}
+        onClose={() => {
+          closeViewModal();
+          setViewOrder(null);
+        }}
+        className="max-w-[900px] rounded-xl bg-white"
+      >
+        {viewOrder && (
+          <div className="flex max-h-[85vh] flex-col">
+            {/* ===== HEADER ===== */}
+            <div className="border-b px-6 py-4">
+              <h3 className="text-lg font-semibold">
+                Order #{viewOrder.orderId}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {new Date(viewOrder.createdAt).toLocaleString("vi-VN")}
+              </p>
+            </div>
+
+            {/* ===== BODY ===== */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* Customer info */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Customer</p>
+                  <p className="font-medium">{viewOrder.customerName}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Email</p>
+                  <p className="font-medium">{viewOrder.email}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Status</p>
+                  <span className="inline-block rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                    {viewOrder.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Items table */}
+              <table className="w-full text-sm border rounded-lg overflow-hidden">
+                <thead className="bg-gray-100 text-gray-600">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Product</th>
+                    <th className="px-4 py-2 text-center">Qty</th>
+                    <th className="px-4 py-2 text-right">Price</th>
+                    <th className="px-4 py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewOrder.items.map((i) => (
+                    <tr key={i.productId} className="border-t">
+                      <td className="px-4 py-2">{i.productName}</td>
+                      <td className="px-4 py-2 text-center">{i.quantity}</td>
+                      <td className="px-4 py-2 text-right">
+                        {i.unitPrice.toLocaleString("vi-VN")} đ
+                      </td>
+                      <td className="px-4 py-2 text-right font-medium">
+                        {i.total.toLocaleString("vi-VN")} đ
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* ===== FOOTER ===== */}
+            <div className="border-t px-6 py-4 flex justify-between">
+              <span className="text-sm text-gray-500">Total amount</span>
+              <span className="text-lg font-bold">
+                {viewOrder.totalAmount.toLocaleString("vi-VN")} đ
+              </span>
+            </div>
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 }
