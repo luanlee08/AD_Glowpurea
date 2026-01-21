@@ -26,6 +26,7 @@ export default function AccountManagement() {
     setEditStatus(acc.status);
     openModal();
   };
+
   const handleUpdateStatus = async () => {
     if (!editing) return;
 
@@ -55,7 +56,6 @@ export default function AccountManagement() {
     }
   };
 
-
   useEffect(() => {
     const load = async () => {
       const res = await getAccounts({
@@ -64,14 +64,10 @@ export default function AccountManagement() {
       });
 
       setAccounts(res?.data ?? []);
-
     };
 
     load();
   }, [keyword, status]);
-
-
-
 
   const renderStatus = (status: AccountStatus) => {
     const map = {
@@ -80,19 +76,26 @@ export default function AccountManagement() {
       Inactive: "bg-gray-200 text-gray-600",
     };
 
+    const label = {
+      Active: "Hoạt động",
+      Inactive: "Ngừng hoạt động",
+      Blocked: "Bị khóa",
+    };
+
     return (
       <span
         className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${map[status]}`}
       >
-        {status}
+        {label[status]}
       </span>
     );
   };
+
   return (
     <div className="rounded-2xl bg-white p-6 shadow-theme-xl">
       {/* HEADER */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Account Management</h1>
+        <h1 className="text-xl font-semibold">Quản lý tài khoản</h1>
 
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -100,7 +103,7 @@ export default function AccountManagement() {
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search name, email, phone..."
+              placeholder="Tìm theo tên, email, số điện thoại..."
               className="h-10 w-64 rounded-lg border border-gray-200 pl-9 pr-4 text-sm focus:border-indigo-500 focus:outline-none"
             />
           </div>
@@ -110,26 +113,24 @@ export default function AccountManagement() {
             onChange={(e) => setStatus(e.target.value as any)}
             className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
           >
-            <option value="">All</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="Blocked">Blocked</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="Active">Hoạt động</option>
+            <option value="Inactive">Ngừng hoạt động</option>
+            <option value="Blocked">Bị khóa</option>
           </select>
         </div>
       </div>
-
-
 
       {/* TABLE */}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-gray-500">
-            <th className="py-3">Name</th>
+            <th className="py-3">Tên</th>
             <th>Email</th>
-            <th>Phone</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Created</th>
+            <th>Số điện thoại</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Ngày tạo</th>
             <th>Thao tác</th>
           </tr>
         </thead>
@@ -138,19 +139,19 @@ export default function AccountManagement() {
           {accounts.map((a) => (
             <tr
               key={a.accountId}
-              className="border-b hover:bg-gray-50 transition"
+              className="border-b transition hover:bg-gray-50"
             >
               <td className="py-4 font-medium">{a.accountName}</td>
               <td>{a.email}</td>
               <td>{a.phoneNumber ?? "-"}</td>
-              <td className="capitalize">{a.roleName ?? "customer"}</td>
-              <td>{renderStatus(a.status)}</td>
-              <td>
-                {new Date(a.createdAt).toLocaleDateString()}
+              <td className="capitalize">
+                {a.roleName ?? "Khách hàng"}
               </td>
+              <td>{renderStatus(a.status)}</td>
+              <td>{new Date(a.createdAt).toLocaleDateString("vi-VN")}</td>
               <td className="px-3 py-2 text-center">
                 <button
-                  className="p-2 rounded hover:bg-gray-200"
+                  className="rounded p-2 hover:bg-gray-200"
                   onClick={() => openEdit(a)}
                 >
                   <Pencil size={16} />
@@ -161,6 +162,7 @@ export default function AccountManagement() {
         </tbody>
       </table>
 
+      {/* MODAL */}
       <Modal
         isOpen={isOpen}
         onClose={() => {
@@ -170,16 +172,13 @@ export default function AccountManagement() {
         className="max-w-[480px] rounded-xl bg-white"
       >
         <div className="flex max-h-[85vh] flex-col">
-          {/* HEADER */}
           <div className="border-b px-6 py-4">
             <h3 className="text-lg font-semibold">
               Cập nhật trạng thái tài khoản
             </h3>
           </div>
 
-          {/* BODY */}
           <div className="flex-1 space-y-4 px-6 py-4">
-            {/* Name */}
             <div>
               <label className="mb-1 block text-sm text-gray-600">
                 Tên tài khoản
@@ -191,7 +190,6 @@ export default function AccountManagement() {
               />
             </div>
 
-            {/* Email */}
             <div>
               <label className="mb-1 block text-sm text-gray-600">
                 Email
@@ -203,7 +201,6 @@ export default function AccountManagement() {
               />
             </div>
 
-            {/* Status */}
             <div>
               <label className="mb-1 block text-sm text-gray-600">
                 Trạng thái
@@ -215,14 +212,13 @@ export default function AccountManagement() {
                 }
                 className="w-full rounded-lg border px-3 py-2 text-sm"
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Blocked">Blocked</option>
+                <option value="Active">Hoạt động</option>
+                <option value="Inactive">Ngừng hoạt động</option>
+                <option value="Blocked">Bị khóa</option>
               </select>
             </div>
           </div>
 
-          {/* FOOTER */}
           <div className="flex justify-end gap-3 border-t px-6 py-4">
             <button
               onClick={() => {
