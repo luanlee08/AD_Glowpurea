@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Search, Pencil, Eye } from "lucide-react";
-import { createPortal } from "react-dom";
 import { getAdminOrders, updateOrderStatus, getAdminOrderDetail } from "../../../services/order.service";
 import { Modal } from "@/components/ui/modal";
 import { useModal } from "@/hooks/useModal";
@@ -57,17 +56,43 @@ export default function OrderManagement() {
     openModal: openEditModal,
     closeModal: closeEditModal,
   } = useModal();
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(5);
+  const [total, setTotal] = useState(0);
 
-  const ModalPortal = ({ children }: { children: React.ReactNode }) => {
-    if (typeof window === "undefined") return null;
-    return createPortal(children, document.body);
+  const statusOptions = [
+    { id: 3, name: "Pending" },
+    { id: 4, name: "Confirmed" },
+    { id: 5, name: "Shipped" },
+    { id: 6, name: "Delivered" },
+    { id: 7, name: "Cancelled" },
+  ];
+
+  const statusClass = (status: string) => {
+    switch (status) {
+      case "Pending": return "bg-yellow-100 text-yellow-700";
+      case "Confirmed": return "bg-green-100 text-green-700";
+      case "Shipped": return "bg-blue-100 text-blue-700";
+      case "Delivered": return "bg-indigo-100 text-indigo-700";
+      case "Cancelled": return "bg-red-100 text-red-700";
+      default: return "";
+    }
   };
+
+  const getStatusIdByName = (name: string) =>
+    statusOptions.find(s => s.name === name)?.id ?? 0;
+
+
+
   /* ===== LOAD ORDERS ===== */
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const data = await getAdminOrders();
-        setOrders(data);
+        setLoading(true);
+        const res = await getAdminOrders(page, pageSize);
+
+        setOrders(res.data);
+        setTotal(res.total);
       } catch (err) {
         console.error(err);
       } finally {
@@ -76,7 +101,8 @@ export default function OrderManagement() {
     };
 
     fetchOrders();
-  }, []);
+  }, [page, pageSize]);
+
 
   /* ===== SEARCH ===== */
   const filteredOrders = orders.filter(
@@ -85,24 +111,11 @@ export default function OrderManagement() {
       o.accountName.toLowerCase().includes(search.toLowerCase()) ||
       o.email.toLowerCase().includes(search.toLowerCase())
   );
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   /* ===== UPDATE STATUS ===== */
-  const statusToId: Record<string, number> = {
-    Pending: 1,
-    Shipped: 2,
-    Delivered: 3,
-    Confirmed: 4,
-    Cancelled: 5,
-  };
-
-  const statusIdToName: Record<number, string> = {
-    1: "Pending",
-    2: "Shipped",
-    3: "Delivered",
-    4: "Confirmed",
-    5: "Cancelled",
-  };
-
 
 
   const handleChangeStatus = async (
@@ -112,13 +125,18 @@ export default function OrderManagement() {
     try {
       await updateOrderStatus(orderId, statusId);
 
-      const data = await getAdminOrders();
-      setOrders(data);
+      const res = await getAdminOrders(page, pageSize);
+      setOrders(res.data);
+      setTotal(res.total);
+
     } catch (err) {
       alert("Cập nhật trạng thái thất bại");
       throw err;
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow">
@@ -126,7 +144,7 @@ export default function OrderManagement() {
         <h1 className="text-2xl font-bold">Order Management</h1>
 
         <input
-          placeholder="Search order / customer / email"
+          placeholder="Search in current page"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="h-10 rounded-lg border px-4"
@@ -136,95 +154,151 @@ export default function OrderManagement() {
       {loading && <p>Loading...</p>}
 
       {!loading && (
-        <table className="w-full text-sm border-separate border-spacing-y-2">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="px-4 py-2">Order</th>
-              <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Total</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Created</th>
-              <th className="px-4 py-2 text-center">Thao tác</th>
-            </tr>
-          </thead>
+        <>
+          <table className="w-full text-sm border-separate border-spacing-y-2">
+            <thead>
+              <tr className="text-left text-gray-500">
+                <th className="px-4 py-2">Order</th>
+                <th className="px-4 py-2">Customer</th>
+                <th className="px-4 py-2">Email</th>
+                <th className="px-4 py-2">Total</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Created</th>
+                <th className="px-4 py-2 text-center">Thao tác</th>
+              </tr>
+            </thead>
 
 
-          <tbody>
-            {filteredOrders.map((o) => (
-              <tr
-                key={o.orderId}
-                className="bg-white rounded-lg shadow-sm"
-              >
-                <td className="px-4 py-3 font-medium">ORD{o.orderId}</td>
-                <td className="px-4 py-3">{o.accountName}</td>
-                <td className="px-4 py-3">{o.email}</td>
-                <td className="px-4 py-3">
-                  {o.totalAmount.toLocaleString("vi-VN")} đ
-                </td>
+            <tbody>
+              {filteredOrders.map((o) => (
+                <tr
+                  key={o.orderId}
+                  className="bg-white rounded-lg shadow-sm"
+                >
+                  <td className="px-4 py-3 font-medium">ORD{o.orderId}</td>
+                  <td className="px-4 py-3">{o.accountName}</td>
+                  <td className="px-4 py-3">{o.email}</td>
+                  <td className="px-4 py-3">
+                    {o.totalAmount.toLocaleString("vi-VN")} đ
+                  </td>
 
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold
                     ${o.status === "Pending" && "bg-yellow-100 text-yellow-700"}
                     ${o.status === "Shipped" && "bg-blue-100 text-blue-700"}
                     ${o.status === "Delivered" && "bg-indigo-100 text-indigo-700"}
                     ${o.status === "Confirmed" && "bg-green-100 text-green-700"}
                     ${o.status === "Cancelled" && "bg-red-100 text-red-700"}
                   `}
-                  >
-                    {o.status}
-                  </span>
+                    >
+                      {o.status}
+                    </span>
 
-                </td>
+                  </td>
 
 
-                <td>
-                  {new Date(o.createdAt).toLocaleDateString("vi-VN")}
-                </td>
-                <td className="px-4 py-3 text-center flex justify-center gap-3">
-                  {/* VIEW DETAIL */}
+                  <td>
+                    {new Date(o.createdAt).toLocaleDateString("vi-VN")}
+                  </td>
+                  <td className="px-4 py-3 text-center flex justify-center gap-3">
+                    {/* VIEW DETAIL */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          setViewLoading(true);
+                          const detail = await getAdminOrderDetail(o.orderId);
+                          setViewOrder(detail);
+                          openViewModal(); // 🔥 mở modal
+                        } catch {
+                          alert("Không tải được chi tiết đơn hàng");
+                        } finally {
+                          setViewLoading(false);
+                        }
+                      }}
+                    >
+                      <Eye size={16} />
+                    </button>
+
+
+                    {/* EDIT STATUS */}
+                    <button
+                      disabled={o.status === "Cancelled"}
+                      onClick={() => {
+                        setEditingOrder(o);
+                        setEditStatusId(getStatusIdByName(o.status));
+                        openEditModal();
+                      }}
+
+                      className={`text-gray-500 hover:text-black ${o.status === "Cancelled"
+                        ? "opacity-40 cursor-not-allowed hover:text-gray-500"
+                        : ""
+                        }`}
+
+                    >
+                      <Pencil size={16} />
+                    </button>
+
+                  </td>
+
+
+                </tr>
+
+              ))}
+            </tbody>
+          </table>
+          {/* ===== PAGINATION ===== */}
+          <div className="mt-6 flex items-center justify-between">
+            {/* LEFT INFO */}
+            <span className="text-sm text-gray-500">
+              Trang {page} / {totalPages} · Tổng {total} sản phẩm
+            </span>
+
+            {/* RIGHT CONTROLS */}
+            <div className="flex items-center gap-2">
+              {/* PREV */}
+              <button
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+                className="flex h-9 w-9 items-center justify-center rounded border
+        disabled:opacity-40"
+              >
+                ←
+              </button>
+
+              {/* PAGE NUMBERS */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .slice(
+                  Math.max(0, page - 2),
+                  Math.min(totalPages, page + 1)
+                )
+                .map(p => (
                   <button
-                    onClick={async () => {
-                      try {
-                        setViewLoading(true);
-                        const detail = await getAdminOrderDetail(o.orderId);
-                        setViewOrder(detail);
-                        openViewModal(); // 🔥 mở modal
-                      } catch {
-                        alert("Không tải được chi tiết đơn hàng");
-                      } finally {
-                        setViewLoading(false);
-                      }
-                    }}
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`h-9 w-9 rounded border text-sm font-medium
+            ${p === page
+                        ? "bg-indigo-500 text-white border-indigo-500"
+                        : "hover:bg-gray-100"
+                      }`}
                   >
-                    <Eye size={16} />
+                    {p}
                   </button>
+                ))}
 
+              {/* NEXT */}
+              <button
+                disabled={page === totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="flex h-9 w-9 items-center justify-center rounded border
+        disabled:opacity-40"
+              >
+                →
+              </button>
+            </div>
+          </div>
 
-                  {/* EDIT STATUS */}
-                  <button
-                    disabled={o.status === "Confirmed" || o.status === "Cancelled"}
-                    onClick={() => {
-                      setEditingOrder(o);
-                      setEditStatusId(statusToId[o.status]);
-                      openEditModal(); // 🔥 mở modal
-                    }}
-                    className={`text-gray-500 hover:text-black
-                      ${(o.status === "Confirmed" || o.status === "Cancelled")
-                      && "opacity-40 cursor-not-allowed hover:text-gray-500"}
-                    `}
-                  >
-                    <Pencil size={16} />
-                  </button>
-
-                </td>
-
-
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        </>
       )}
       <Modal
         isOpen={isEditOpen}
@@ -251,14 +325,15 @@ export default function OrderManagement() {
                 <select
                   value={editStatusId}
                   onChange={(e) => setEditStatusId(Number(e.target.value))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm"
                 >
-                  <option value={1}>Pending</option>
-                  <option value={2}>Shipped</option>
-                  <option value={3}>Delivered</option>
-                  <option value={4}>Confirmed</option>
-                  <option value={5}>Cancelled</option>
+                  {statusOptions.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
+
+
               </div>
             </div>
 
@@ -275,23 +350,21 @@ export default function OrderManagement() {
               </button>
 
               <button
-                disabled={editStatusId === statusToId[editingOrder.status]}
+                disabled={editStatusId === getStatusIdByName(editingOrder.status)}
                 className={`rounded-lg px-4 py-2 text-sm text-white
-            ${editStatusId === statusToId[editingOrder.status]
+    ${editStatusId === getStatusIdByName(editingOrder.status)
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-black"}
-          `}
+                    : "bg-black"
+                  }`}
                 onClick={async () => {
-                  await handleChangeStatus(
-                    editingOrder.orderId,
-                    editStatusId
-                  );
+                  await handleChangeStatus(editingOrder.orderId, editStatusId);
                   closeEditModal();
                   setEditingOrder(null);
                 }}
               >
                 Save
               </button>
+
             </div>
           </div>
         )}
