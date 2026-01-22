@@ -314,7 +314,7 @@ export default function ProductForm({
             setForm((prev) => ({
               ...prev,
               description: html,  
-            }))
+            })) 
           }
         />
       </div>
