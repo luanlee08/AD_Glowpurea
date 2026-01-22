@@ -141,29 +141,46 @@ export default function OrderManagement() {
   return (
     <div className="rounded-2xl bg-white p-6 shadow">
       <div className="mb-6 flex justify-between">
-        <h1 className="text-2xl font-bold">Order Management</h1>
+        <h1 className="text-2xl font-bold">Quản lí đơn hàng</h1>
 
-        <input
-          placeholder="Search in current page"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-10 rounded-lg border px-4"
-        />
+        <div className="relative w-[320px]">
+          <Search
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
+
+          <input
+            placeholder="Tìm kiếm đơn hàng, khách hàng, email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="
+      h-10 w-full
+      rounded-lg border border-gray-300
+      pl-10 pr-4
+      text-sm
+      placeholder:text-gray-400
+      focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
+      outline-none
+      transition
+    "
+          />
+        </div>
+
       </div>
 
-      {loading && <p>Loading...</p>}
+      {loading && <p>Đang tải...</p>}
 
       {!loading && (
         <>
           <table className="w-full text-sm border-separate border-spacing-y-2">
             <thead>
               <tr className="text-left text-gray-500">
-                <th className="px-4 py-2">Order</th>
-                <th className="px-4 py-2">Customer</th>
+                <th className="px-4 py-2">Đơn hàng</th>
+                <th className="px-4 py-2">Khách hàng</th>
                 <th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Total</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Created</th>
+                <th className="px-4 py-2">Tổng đơn hàng</th>
+                <th className="px-4 py-2">Trạng thái</th>
+                <th className="px-4 py-2">Ngày tạo</th>
                 <th className="px-4 py-2 text-center">Thao tác</th>
               </tr>
             </thead>
