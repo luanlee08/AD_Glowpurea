@@ -24,3 +24,10 @@ export const adminLogin = async (
 
   return res.data;
 };
+export const adminLogout = () => {
+  localStorage.removeItem("admin_token");
+  localStorage.removeItem("admin_email");
+
+  // nếu sau này bạn lưu thêm
+  // localStorage.removeItem("admin_info");
+};
