@@ -1,56 +1,37 @@
 "use client";
-import React from "react";
 import Badge from "../ui/badge/Badge";
-import { ArrowDownIcon, ArrowUpIcon, BoxIconLine, GroupIcon } from "@/icons";
+import { ArrowUpIcon, GroupIcon, BoxIconLine } from "@/icons";
 
-export const EcommerceMetrics = () => {
+interface Props {
+  users: {
+    totalUsers: number;
+    newUsersThisMonth: number;
+  };
+  orders: {
+    totalOrders: number;
+  };
+}
+
+export const EcommerceMetrics = ({ users, orders }: Props) => {
+  if (!users || !orders) return null; // 🛡️ chống crash
+
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
-      {/* <!-- Metric Item Start --> */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-          <GroupIcon className="text-gray-800 size-6 dark:text-white/90" />
-        </div>
-
-        <div className="flex items-end justify-between mt-5">
-          <div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Customers
-            </span>
-            <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              3,782
-            </h4>
-          </div>
-          <Badge color="success">
-            <ArrowUpIcon />
-            11.01%
-          </Badge>
-        </div>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="rounded-2xl border p-5 bg-white">
+        <GroupIcon />
+        <p>Customers</p>
+        <h3>{users.totalUsers}</h3>
+        <Badge color="success">
+          <ArrowUpIcon /> +{users.newUsersThisMonth}
+        </Badge>
       </div>
-      {/* <!-- Metric Item End --> */}
 
-      {/* <!-- Metric Item Start --> */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-          <BoxIconLine className="text-gray-800 dark:text-white/90" />
-        </div>
-        <div className="flex items-end justify-between mt-5">
-          <div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Orders
-            </span>
-            <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
-            </h4>
-          </div>
-
-          <Badge color="error">
-            <ArrowDownIcon className="text-error-500" />
-            9.05%
-          </Badge>
-        </div>
+      <div className="rounded-2xl border p-5 bg-white">
+        <BoxIconLine />
+        <p>Orders</p>
+        <h3>{orders.totalOrders}</h3>
       </div>
-      {/* <!-- Metric Item End --> */}
     </div>
   );
 };
+
