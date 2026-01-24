@@ -1,12 +1,12 @@
-import ProductManagement from "@/components/Products/ProductManagement";
-import PageBreadcrumb from "@/components/common/PageBreadCrumb";
-import { Metadata } from "next";
-import React from "react";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Product Management | TailAdmin",
-  description: "Manage products, pricing and inventory",
-};
+import dynamic from "next/dynamic";
+import PageBreadcrumb from "@/components/common/PageBreadCrumb";
+
+const ProductManagement = dynamic(
+  () => import("@/components/Products/ProductManagement"),
+  { ssr: false }
+);
 
 export default function Page() {
   return (
