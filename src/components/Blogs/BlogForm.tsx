@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import toast from "react-hot-toast";
-import RichTextEditor from "@/components/editors/RichTextEditor";
 import { getBlogCategories, LookupItem } from "../../../services/lookup.service";
+
+/* ================= DYNAMIC EDITOR (FIX CHỚP) ================= */
+const RichTextEditor = dynamic(
+  () => import("@/components/editors/RichTextEditor"),
+  { ssr: false }
+);
+
 /* ================= TYPES ================= */
 
 export interface BlogFormData {
@@ -26,7 +33,7 @@ interface BlogFormProps {
     isDeleted: boolean;
     thumbnailUrl?: string;
   };
-  onSubmit: (data: BlogFormData) => Promise<void> | void;
+  onSubmit: (data: BlogFormData) => Promise<void>;
   onCancel: () => void;
   submitText?: string;
 }
@@ -41,49 +48,29 @@ export default function BlogForm({
 }: BlogFormProps) {
   /* ================= STATE ================= */
 
-  const [form, setForm] = useState<BlogFormData>(() => ({
-    title: initialData?.title ?? "",
-    content: initialData?.content ?? "",
-    categoryId: initialData?.categoryId ?? 1,
-    isPublished: initialData?.isPublished ?? false,
-    isFeatured: initialData?.isFeatured ?? false,
-    isActive: initialData
-      ? !initialData.isDeleted
-      : true,
+  const [form, setForm] = useState<BlogFormData>({
+    title: "",
+    content: "",
+    categoryId: 0,
+    isPublished: false,
+    isFeatured: false,
+    isActive: true,
     thumbnail: null,
-  }));
+  });
 
-  const [preview, setPreview] = useState<string | null>(
-    initialData?.thumbnailUrl ?? null
-  );
-  useEffect(() => {
-    console.log("FORM INIT CATEGORY:", initialData?.categoryId);
-  }, [initialData]);
-
+  const [preview, setPreview] = useState<string | null>(null);
+  const [categories, setCategories] = useState<LookupItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /* ================= HANDLERS ================= */
+  /* ================= INIT DATA ================= */
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked
-          : value,
-    }));
-  };
   useEffect(() => {
     if (!initialData) return;
 
     setForm({
       title: initialData.title,
       content: initialData.content,
-      categoryId: initialData.categoryId, // ⭐ QUAN TRỌNG
+      categoryId: initialData.categoryId,
       isPublished: initialData.isPublished,
       isFeatured: initialData.isFeatured,
       isActive: !initialData.isDeleted,
@@ -92,6 +79,25 @@ export default function BlogForm({
 
     setPreview(initialData.thumbnailUrl ?? null);
   }, [initialData]);
+
+  useEffect(() => {
+    getBlogCategories()
+      .then(setCategories)
+      .catch(() => toast.error("Không tải được thể loại blog"));
+  }, []);
+
+  /* ================= HANDLERS ================= */
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, type, value, checked } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
   const handleSelectChange = (
     e: React.ChangeEvent<HTMLSelectElement>
@@ -102,6 +108,10 @@ export default function BlogForm({
     }));
   };
 
+  const handleContentChange = useCallback((html: string) => {
+    setForm((prev) => ({ ...prev, content: html }));
+  }, []);
+
   const handleThumbnailChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -109,9 +119,7 @@ export default function BlogForm({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Ảnh đại diện phải là file hình ảnh", {
-        id: "thumbnail-invalid",
-      });
+      toast.error("Ảnh đại diện phải là file hình ảnh");
       return;
     }
 
@@ -123,43 +131,23 @@ export default function BlogForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (isSubmitting) return;
 
-    // 🔴 FE VALIDATION
+    // FE VALIDATION
     if (!form.title.trim()) {
-      toast.error("Tiêu đề không được để trống", {
-        id: "title-required",
-      });
+      toast.error("Tiêu đề không được để trống");
       return;
     }
 
     if (!form.content.trim()) {
-      toast.error("Nội dung không được để trống", {
-        id: "content-required",
-      });
+      toast.error("Nội dung không được để trống");
       return;
     }
 
     if (!initialData && !form.thumbnail) {
-      toast.error("Vui lòng chọn ảnh đại diện", {
-        id: "thumbnail-required",
-      });
+      toast.error("Vui lòng chọn ảnh đại diện");
       return;
     }
-
-    if (
-      initialData &&
-      !initialData.thumbnailUrl &&
-      !form.thumbnail
-    ) {
-      toast.error("Vui lòng chọn ảnh đại diện", {
-        id: "thumbnail-required",
-      });
-      return;
-    }
-
-
 
     try {
       setIsSubmitting(true);
@@ -168,13 +156,6 @@ export default function BlogForm({
       setIsSubmitting(false);
     }
   };
-  const [categories, setCategories] = useState<LookupItem[]>([]);
-
-  useEffect(() => {
-    getBlogCategories()
-      .then(setCategories)
-      .catch(() => toast.error("Không tải được thể loại"));
-  }, []);
 
   /* ================= RENDER ================= */
 
@@ -201,33 +182,24 @@ export default function BlogForm({
           className="w-full rounded-lg border px-3 py-2"
         >
           <option value={0} disabled>
-            -- Chọn thể loại -- 
+            -- Chọn thể loại --
           </option>
-
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
           ))}
         </select>
-
       </div>
 
       {/* CONTENT */}
       <div>
         <label className="mb-1 block font-medium">Nội dung</label>
-
         <RichTextEditor
           value={form.content}
-          onChange={(html) =>
-            setForm((prev) => ({
-              ...prev,
-              content: html,
-            }))
-          }
+          onChange={handleContentChange}
         />
       </div>
-
 
       {/* THUMBNAIL */}
       <div>
@@ -238,7 +210,7 @@ export default function BlogForm({
           <img
             src={preview}
             alt="Preview"
-            className="mt-3 h-24 w-24 rounded-lg object-cover border"
+            className="mt-3 h-24 w-24 rounded-lg border object-cover"
           />
         )}
       </div>
@@ -264,6 +236,7 @@ export default function BlogForm({
           />
           Nổi bật
         </label>
+
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -274,8 +247,9 @@ export default function BlogForm({
           Hoạt động
         </label>
       </div>
+
       {/* ACTIONS */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
+      <div className="flex justify-end gap-3 border-t pt-4">
         <button
           type="button"
           onClick={onCancel}
@@ -287,10 +261,11 @@ export default function BlogForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className={`rounded-lg px-4 py-2 text-white ${isSubmitting
-            ? "bg-gray-400 cursor-not-allowed"
-            : "bg-indigo-500 hover:bg-indigo-600"
-            }`}
+          className={`rounded-lg px-4 py-2 text-white ${
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-indigo-500 hover:bg-indigo-600"
+          }`}
         >
           {isSubmitting ? "Đang xử lý..." : submitText}
         </button>

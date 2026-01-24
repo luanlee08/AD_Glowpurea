@@ -152,7 +152,11 @@ export default function ProductManagement() {
 
           {/* ➕ Add Product */}
           <button
-            onClick={openModal}
+            onClick={() => {
+              setEditingId(null);     // 🔥 reset edit
+              setInitialData(null);   // 🔥 reset form
+              openModal();
+            }}
             className="flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-600"
           >
             <Plus size={16} />
@@ -338,7 +342,11 @@ export default function ProductManagement() {
       {/* MODAL */}
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
+        onClose={() => {
+          closeModal();
+          setEditingId(null);
+          setInitialData(null);
+        }}
         className="max-w-[720px] rounded-xl bg-white dark:bg-slate-900"
       >
         <div className="flex max-h-[85vh] flex-col">

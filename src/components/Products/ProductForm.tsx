@@ -66,17 +66,35 @@ export default function ProductForm({
   /* ================= LOAD DATA EDIT ================= */
 
   useEffect(() => {
-    if (!initialData) return;
+    if (initialData) {
+      // EDIT
+      setForm({
+        ...initialData,
+        mainImage: null,
+        subImages: [],
+      });
 
-    setForm({
-      ...initialData,
-      mainImage: null,
-      subImages: [],
-    });
+      setMainPreview(initialData.mainImageUrl ?? null);
+      setSubPreviews(initialData.subImageUrls ?? []);
+    } else {
+      // 🔥 ADD → RESET FORM
+      setForm({
+        name: "",
+        quantity: 0,
+        price: 0,
+        description: "",
+        status: "Available",
+        categoryId: "",
+        shapeId: "",
+        mainImage: null,
+        subImages: [],
+      });
 
-    setMainPreview(initialData.mainImageUrl ?? null);
-    setSubPreviews(initialData.subImageUrls ?? []);
+      setMainPreview(null);
+      setSubPreviews([]);
+    }
   }, [initialData]);
+
 
   /* ================= LOAD CATEGORY & SHAPE ================= */
 
@@ -313,8 +331,8 @@ export default function ProductForm({
           onChange={(html) =>
             setForm((prev) => ({
               ...prev,
-              description: html,  
-            })) 
+              description: html,
+            }))
           }
         />
       </div>

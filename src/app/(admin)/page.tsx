@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
@@ -9,7 +9,7 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
 
-/* ================== FORMAT TIỀN ================== */
+/* ================== FORMAT ================== */
 function formatVND(value: number) {
   return value.toLocaleString("vi-VN") + " ₫";
 }
@@ -19,6 +19,8 @@ type UserFilter = "week" | "lastWeek" | "month" | "quarter";
 type RevenueFilter = "week" | "lastWeek" | "month" | "quarter";
 
 export default function DashboardPage() {
+  const router = useRouter();
+
   const [data, setData] = useState<any>(null);
   const [userFilter, setUserFilter] = useState<UserFilter>("week");
   const [revenueFilter, setRevenueFilter] =
@@ -38,11 +40,9 @@ export default function DashboardPage() {
   const products = data.products ?? {};
   const revenue = data.revenue ?? {};
 
-  /* USERS */
   const totalUsers = users.totalUsers ?? 0;
   const newUsersThisMonth = users.newUsersThisMonth ?? 0;
 
-  /* ORDERS */
   const {
     totalOrders = 0,
     pending = 0,
@@ -52,17 +52,13 @@ export default function DashboardPage() {
     cancelled = 0,
   } = orders;
 
-  /* PRODUCTS */
   const totalProducts = products.totalProducts ?? 0;
   const outOfStock = products.outOfStock ?? 0;
 
-  /* REVENUE */
   const {
     totalRevenue = 0,
-    todayRevenue = 0,
-    thisMonthRevenue = 0,
     revenueByWeek = {},
-    revenueByMonth = [],
+    monthlyRevenue = [],
     revenueByQuarter = [],
   } = revenue;
 
@@ -72,26 +68,43 @@ export default function DashboardPage() {
       case "week":
         return {
           categories: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
-          data: [1, 2, 0, 1, 3, 2, 1],
+          data: (users.userByWeekThisWeek as number[]) ?? Array(7).fill(0),
         };
+
       case "lastWeek":
         return {
           categories: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
-          data: [0, 1, 1, 0, 2, 1, 0],
+          data: (users.userByWeekLastWeek as number[]) ?? Array(7).fill(0),
         };
-      case "quarter":
-        return {
-          categories: ["Quý 1", "Quý 2", "Quý 3", "Quý 4"],
-          data: [totalUsers, 0, 0, 0],
-        };
-      default:
+
+      case "month":
         return {
           categories: [
-            "Th1","Th2","Th3","Th4","Th5","Th6",
-            "Th7","Th8","Th9","Th10","Th11","Th12",
+            "Th1", "Th2", "Th3", "Th4", "Th5", "Th6",
+            "Th7", "Th8", "Th9", "Th10", "Th11", "Th12",
           ],
-          data: [3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          data: (users.userByMonth as number[]) ?? Array(12).fill(0),
         };
+
+      case "quarter": {
+        const months = (users.userByMonth as number[]) ?? Array(12).fill(0);
+
+        const sum = (arr: number[]) =>
+          arr.reduce((a: number, b: number) => a + b, 0);
+
+        return {
+          categories: ["Quý 1", "Quý 2", "Quý 3", "Quý 4"],
+          data: [
+            sum(months.slice(0, 3)),
+            sum(months.slice(3, 6)),
+            sum(months.slice(6, 9)),
+            sum(months.slice(9, 12)),
+          ],
+        };
+      }
+
+      default:
+        return { categories: [], data: [] };
     }
   }
 
@@ -116,10 +129,10 @@ export default function DashboardPage() {
       default:
         return {
           categories: [
-            "Th1","Th2","Th3","Th4","Th5","Th6",
-            "Th7","Th8","Th9","Th10","Th11","Th12",
+            "Th1", "Th2", "Th3", "Th4", "Th5", "Th6",
+            "Th7", "Th8", "Th9", "Th10", "Th11", "Th12",
           ],
-          data: revenueByMonth ?? [],
+          data: monthlyRevenue ?? [],
         };
     }
   }
@@ -138,9 +151,7 @@ export default function DashboardPage() {
     plotOptions: {
       bar: { borderRadius: 6, columnWidth: "45%" },
     },
-    xaxis: {
-      categories: getRevenueChartData().categories,
-    },
+    xaxis: { categories: getRevenueChartData().categories },
     tooltip: {
       y: { formatter: (v: number) => formatVND(v) },
     },
@@ -161,7 +172,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 p-6">
-      {/* ================== KPI ================== */}
+      {/* KPI */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <KPI title="Khách hàng" value={totalUsers} note={`+${newUsersThisMonth} trong tháng`} />
         <KPI title="Đơn hàng" value={totalOrders} />
@@ -169,39 +180,27 @@ export default function DashboardPage() {
         <KPI title="Doanh thu" value={formatVND(totalRevenue)} />
       </div>
 
-      {/* ================== USERS ================== */}
-      <Section
-        title="👤 Người dùng đăng ký"
-        filter={userFilter}
-        setFilter={setUserFilter}
-      >
+      {/* USERS */}
+      <Section title="👤 Người dùng đăng ký" filter={userFilter} setFilter={setUserFilter}>
         <ReactApexChart
           options={userChartOptions}
-          series={[
-            { name: "Người dùng mới", data: getUserChartData().data },
-          ]}
+          series={[{ name: "Người dùng mới", data: getUserChartData().data }]}
           type="line"
           height={280}
         />
       </Section>
 
-      {/* ================== REVENUE ================== */}
-      <Section
-        title="📊 Doanh thu"
-        filter={revenueFilter}
-        setFilter={setRevenueFilter}
-      >
+      {/* REVENUE */}
+      <Section title="📊 Doanh thu" filter={revenueFilter} setFilter={setRevenueFilter}>
         <ReactApexChart
           options={revenueChartOptions}
-          series={[
-            { name: "Doanh thu", data: getRevenueChartData().data },
-          ]}
+          series={[{ name: "Doanh thu", data: getRevenueChartData().data }]}
           type="bar"
           height={260}
         />
       </Section>
 
-      {/* ================== ORDER STATUS ================== */}
+      {/* ORDER STATUS */}
       <div className="rounded-xl border bg-white p-5">
         <h3 className="mb-3 font-semibold">📦 Trạng thái đơn hàng</h3>
         <ReactApexChart
@@ -228,7 +227,7 @@ function Section({ title, filter, setFilter, children }: any) {
             { key: "lastWeek", label: "Tuần trước" },
             { key: "month", label: "Tháng" },
             { key: "quarter", label: "Quý" },
-          ].map((b: any) => (
+          ].map((b) => (
             <button
               key={b.key}
               onClick={() => setFilter(b.key)}
