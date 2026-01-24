@@ -1,5 +1,5 @@
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://localhost:63731";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
+
 
 export const API_ENDPOINTS = {
   // ===== PRODUCTS =====
